@@ -11,11 +11,11 @@ import torch.optim as optim
 import time
 
 import math
-from utils import repackage_hidden
 
-from model import AttentiveLanguageModel
 
-BASELINE = False
+from model import AttentiveRNNLanguageModel
+from tqdm import tqdm
+
 optimization_step = 100
 batch_size = 64
 lr = 0.1
@@ -36,16 +36,7 @@ train_iter, valid_iter, test_iter = PennTreebank.iters(
 vocab_size = len(train_iter.dataset.fields['text'].vocab)
 
 
-### MODEL Selection ###
-# encoder = EncoderRNN(vocab_size, 35, 65, 65,
-#                      rnn_cell='lstm', input_dropout_p=0.5, dropout_p=0.5)
-
-# if BASELINE:
-model = LanguageModel(vocab_size)
-# else:
-# model = PositionalLanguageModel(
-# encoder, dropout_p_decoder=0.5)
-
+model = AttentiveRNNLanguageModel(vocab_size)
 model.to(device)
 
 
@@ -62,17 +53,15 @@ def evaluate(data_iterator):
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0.
-    hidden = model.init_hidden(batch_size)
     example_count = 0
     with torch.no_grad():
         for i, batch in tqdm(enumerate(data_iterator), total=len(data_iterator), disable=True):
             data, targets = batch.text.t(), batch.target
-            output, hidden = model(data, hidden)
+            output = model(data)
             output_flat = output.view(-1, vocab_size)
             total_loss += len(data) * criterion(output_flat,
                                                 targets.view(-1)).item()
             example_count += len(data)
-            hidden = repackage_hidden(hidden)
 
     return total_loss / example_count
 
@@ -83,8 +72,7 @@ def train():
     total_loss = 0.
     total_num_examples = 0
     start_time = time.time()
-    hidden = model.init_hidden(batch_size)
-
+    
     number_of_checkpoints_since_last_loss_decrease = 0
     best_val_loss = 1000
 
@@ -93,7 +81,7 @@ def train():
         data, targets = batch.text.t(), batch.target.t().contiguous()
 
         model.zero_grad()
-        output, hidden = model(data, hidden)
+        output = model(data)
         loss = criterion(output.view(-1, vocab_size), targets.view(-1))
         loss.backward()
 
@@ -101,9 +89,6 @@ def train():
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
         optimizer.step()
 
-        # We detach the hidden state from how it was previously produced.
-        # If we didn't, the model would try backpropagating all the way to start of the dataset.
-        hidden = repackage_hidden(hidden)
 
         total_loss += len(data)*loss.item()
         total_num_examples += len(data)
