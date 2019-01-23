@@ -35,7 +35,8 @@ class AttentiveRNNLanguageModel(nn.Module):
                  dropout_p_input=0.5,
                  dropout_p_encoder=0.0,
                  dropout_p_decoder=0.5,
-                 attention=True):
+                 attention=True,
+                 tie_weights=True):
 
         super(AttentiveRNNLanguageModel, self).__init__()
 
@@ -52,10 +53,22 @@ class AttentiveRNNLanguageModel(nn.Module):
                                dropout=dropout_p_encoder)
         if self.attention:
             self.attention_score_module = Attention(hidden_size)
+            self.concatenation_layer = Linear(hidden_size * 2, hidden_size)
 
-        self.decoder = nn.Linear(
-            hidden_size * (2 if attention else 1), vocab_size)
+        self.decoder = nn.Linear(hidden_size, vocab_size)
         self.decoder_dropout = nn.Dropout(dropout_p_decoder)
+
+        # Optionally tie weights as in:
+        # "Using the Output Embedding to Improve Language Models" (Press & Wolf 2016)
+        # https://arxiv.org/abs/1608.05859
+        # and
+        # "Tying Word Vectors and Word Classifiers: A Loss Framework for Language Modeling" (Inan et al. 2016)
+        # https://arxiv.org/abs/1611.01462
+        if tie_weights:
+            if self.embedding_size != hidden_size:
+                raise ValueError(
+                    'When using the tied flag, encoder embedding_size must be equal to hidden_size')
+            self.decoder.weight = self.embedding.weight
 
         self.init_weights()
 
@@ -79,12 +92,14 @@ class AttentiveRNNLanguageModel(nn.Module):
                     torch.sum(weighted_attention_scores*encoder_output[:, :t+1, :].clone(), dim=1))
 
             context_vectors = torch.stack(context_vectors).transpose(0, 1)
-            combined_endoding = torch.cat(
+            combined_encoding = torch.cat(
                 (context_vectors, encoder_output), dim=2)
-        else:
-            combined_endoding = encoder_output
 
-        output = self.decoder_dropout(combined_endoding)
+            # concatenation layer
+            encoder_output = torch.tanh(
+                self.concatenation_layer(combined_encoding))
+
+        output = self.decoder_dropout(encoder_output)
         decoded = self.decoder(output.contiguous())
 
         return decoded

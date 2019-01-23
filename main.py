@@ -63,6 +63,8 @@ def main(args):
 
     parser.add_argument(
         '--no-attention', help='Disable attention (default: False', action='store_false')
+    parser.add_argument(
+        '--tie-weights', help='Tie embedding and decoder weights (default: False', action='store_true')
 
     args = parser.parse_args(args)
 
@@ -87,7 +89,8 @@ def main(args):
                                       hidden_size=args.hidden_size,
                                       dropout_p_decoder=args.decoder_dropout,
                                       dropout_p_encoder=args.rnn_dropout,
-                                      dropout_p_input=args.input_dropout)
+                                      dropout_p_input=args.input_dropout,
+                                      tie_weights=args.tie_weights)
 
     model.to(device)
 
