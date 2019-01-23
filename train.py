@@ -23,7 +23,10 @@ def evaluate(model, data_iterator, criterion):
 
 def train(args, model, train_iter, valid_iter, criterion, optimizer,
           iteration_step, epoch, best_val_loss,
-          number_of_checkpoints_since_last_loss_decrease, writer):
+          num_checkpoints, writer):
+
+    # num_checkpoints  - number of checkpoints since last loss decrease
+
     # Turn on training mode which enables dropout.
     model.train()
     total_loss = 0.
@@ -67,19 +70,24 @@ def train(args, model, train_iter, valid_iter, criterion, optimizer,
             start_time = time.time()
 
         if iteration_step % args.optimization_step == 0 and iteration_step > 0:
+
             loss = evaluate(model, valid_iter, criterion)
             writer.add_scalar('validation_loss', loss, iteration_step)
+
             if loss < best_val_loss:
                 best_val_loss = loss
-                number_of_checkpoints_since_last_loss_decrease = 0
+                num_checkpoints = 0
             else:
-                number_of_checkpoints_since_last_loss_decrease += 1
+                num_checkpoints += 1
 
-            if number_of_checkpoints_since_last_loss_decrease >= args.patience:
+            if num_checkpoints >= args.patience:
                 # Anneal the learning rate if no improvement has been seen in the validation dataset.
                 print("30 checkpoints since last decrease - decreasing lr rate")
                 for param_group in optimizer.param_groups:
                     param_group['lr'] *= args.lr_decay
 
-                number_of_checkpoints_since_last_loss_decrease = 0
-    return iteration_step, best_val_loss, number_of_checkpoints_since_last_loss_decrease
+                num_checkpoints = 0
+
+            # track learning rate
+            writer.add_scalar('lr', param_group['lr'], iteration_step)
+    return iteration_step, best_val_loss, num_checkpoints

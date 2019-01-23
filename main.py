@@ -112,14 +112,23 @@ def main():
         # Loop over epochs.
         for epoch in range(1, args.epochs+1):
             epoch_start_time = time.time()
-            iteration_step, best_val_loss, num_checkpoints = train(args, model, train_iter,
-                                                                   valid_iter,
-                                                                   criterion, optimizer,
-                                                                   iteration_step, epoch, best_val_loss,
-                                                                   num_checkpoints,
-                                                                   writer)
+            iteration_step, val_loss, num_checkpoints = train(args, model, train_iter,
+                                                              valid_iter,
+                                                              criterion, optimizer,
+                                                              iteration_step, epoch, best_val_loss,
+                                                              num_checkpoints,
+                                                              writer)
 
             val_loss = evaluate(model, valid_iter, criterion)
+            test_loss = evaluate(model, test_iter, criterion)
+
+            writer.add_scalar('validation_loss_at_epoch', val_loss, epoch)
+            writer.add_scalar('test_loss_at_epoch', test_loss, epoch)
+            writer.add_scalar('validation_perplexity_at_epoch',
+                              math.exp(val_loss), epoch)
+            writer.add_scalar('test_perplexity_at_epoch',
+                              math.exp(test_loss), epoch)
+
             print('-' * 89)
             print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
                   'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
@@ -129,7 +138,7 @@ def main():
             if not best_val_loss or val_loss < best_val_loss:
                 if args.save_model:
                     if not os.path.exists('models'):
-                        os.makedirs(directory)
+                        os.makedirs('models')
 
                     with open('models/{}.pt'.format(run_name), 'wb') as f:
                         torch.save(model, f)
