@@ -12,31 +12,19 @@ import torch.optim as optim
 import torchtext
 from torchtext.datasets import WikiText2, PennTreebank
 
+from tensorboardX import SummaryWriter
+
 from model import AttentiveRNNLanguageModel
+from train import evaluate, train
+from utils import generate_filename
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def evaluate(model, data_iterator):
-    # Turn on evaluation mode which disables dropout.
-    model.eval()
-    total_loss = 0.
-    example_count = 0
-    with torch.no_grad():
-        for i, batch in tqdm(enumerate(data_iterator), total=len(data_iterator), disable=True):
-            data, targets = batch.text.t(), batch.target.t().contiguous()
-            output = model(data)
-            output_flat = output.view(-1, vocab_size)
-            total_loss += len(data) * criterion(output_flat,
-                                                targets.view(-1)).item()
-            example_count += len(data)
-
-    return total_loss / example_count
-
-
 def main():
     # Training settings
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser = argparse.ArgumentParser(
+        description='PyTorch Attentive RNN Language Modeling')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--optimization-step', type=int, default=100, metavar='N',
@@ -47,6 +35,8 @@ def main():
                         help='learning rate (default: 0.1)')
     parser.add_argument('--lr-decay', type=float, default=0.1, metavar='LR',
                         help='learning rate decay (default: 0.1)')
+    parser.add_argument('--patience', type=int, default=30, metavar='P',
+                        help='patience (default: 30)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
@@ -58,12 +48,33 @@ def main():
                         choices=['wiki-02', 'ptb'],
                         help='Select which dataset (default: %(default)s)')
 
-    parser.add_argument('--save-model', action='store_true', default=False,
+    parser.add_argument('--embedding-size', type=int, default=65, metavar='N',
+                        help='embedding size for embedding layer (default: 65)')
+    parser.add_argument('--n-layers', type=int, default=1, metavar='N',
+                        help='layer size for RNN encoder (default: 1)')
+
+    parser.add_argument('--hidden-size', type=int, default=65, metavar='N',
+                        help='hidden size for RNN encoder (default: 65)')
+    parser.add_argument('--input-dropout', type=float, default=0.5, metavar='D',
+                        help='input dropout (default: 0.5)')
+    parser.add_argument('--rnn-dropout', type=float, default=0.0, metavar='D',
+                        help='rnn dropout (default: 0.0)')
+    parser.add_argument('--decoder-dropout', type=float, default=0.5, metavar='D',
+                        help='decoder dropout (default: 0.5)')
+
+    parser.add_argument(
+        '--bidirectional', help='Enable bidirectionality in RNN layers (default: False', action='store_true')
+    parser.add_argument(
+        '--no-attention', help='Disable attention (default: False', action='store_false')
+
+    parser.add_argument('--save-model', action='store_true', default=True,
                         help='For Saving the current Model')
     args = parser.parse_args()
 
+    run_name = generate_filename(args)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
+    writer = SummaryWriter('runs/'+run_name)
 
     if args.dataset == 'wiki-02':
         train_iter, valid_iter, test_iter = WikiText2.iters(
@@ -74,7 +85,16 @@ def main():
 
     vocab_size = len(train_iter.dataset.fields['text'].vocab)
 
-    model = AttentiveRNNLanguageModel(vocab_size)
+    model = AttentiveRNNLanguageModel(vocab_size,
+                                      embedding_size=args.embedding_size,
+                                      n_layers=args.n_layers,
+                                      bidirectional=args.bidirectional,
+                                      attention=args.no_attention,
+                                      hidden_size=args.hidden_size,
+                                      dropout_p_decoder=args.decoder_dropout,
+                                      dropout_p_encoder=args.rnn_dropout,
+                                      dropout_p_input=args.input_dropout)
+
     model.to(device)
 
     # Training Set Up
@@ -83,69 +103,23 @@ def main():
 
     criterion = nn.CrossEntropyLoss()
 
-    # Loop over epochs.
-    best_val_loss = None
-
-    def train():
-        # Turn on training mode which enables dropout.
-        model.train()
-        total_loss = 0.
-        total_num_examples = 0
-        start_time = time.time()
-
-        number_of_checkpoints_since_last_loss_decrease = 0
-        best_val_loss = 1000
-
-        for i, batch in tqdm(enumerate(train_iter), total=len(train_iter), disable=True):
-                # transpose text to make batch first
-            data, targets = batch.text.t(), batch.target.t().contiguous()
-
-            model.zero_grad()
-            output = model(data)
-            loss = criterion(output.view(-1, vocab_size), targets.view(-1))
-            loss.backward()
-
-            # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
-            optimizer.step()
-
-            total_loss += len(data)*loss.item()
-            total_num_examples += len(data)
-
-            if i % args.log_interval == 0 and i > 0:
-                cur_loss = total_loss / total_num_examples
-                elapsed = time.time() - start_time
-                print('| epoch {:3d} | {}/{} batches | ms/batch {:5.2f} \
-                    | loss {:5.2f} | ppl {:8.2f}'.format(epoch,
-                                                         i, len(train_iter),
-                                                         elapsed * 1000 / args.log_interval,
-                                                         cur_loss, math.exp(cur_loss)))
-                total_loss = 0
-                total_num_examples = 0
-                start_time = time.time()
-
-            if i % args.optimization_step == 0 and i > 0:
-                loss = evaluate(valid_iter)
-                if loss < best_val_loss:
-                    best_val_loss = loss
-                    number_of_checkpoints_since_last_loss_decrease = 0
-                else:
-                    number_of_checkpoints_since_last_loss_decrease += 1
-
-                if number_of_checkpoints_since_last_loss_decrease >= 30:
-                    # Anneal the learning rate if no improvement has been seen in the validation dataset.
-                    print("30 checkpoints since last decrease - decreasing lr rate")
-                    for param_group in optimizer.param_groups:
-                        param_group['lr'] *= args.lr_decay
-
-                    number_of_checkpoints_since_last_loss_decrease = 0
+    iteration_step = 0
+    best_val_loss = 1000
+    num_checkpoints = 0
 
     # At any point you can hit Ctrl + C to break out of training early.
     try:
+        # Loop over epochs.
         for epoch in range(1, args.epochs+1):
             epoch_start_time = time.time()
-            train()
-            val_loss = evaluate(valid_iter)
+            iteration_step, best_val_loss, num_checkpoints = train(args, model, train_iter,
+                                                                   valid_iter,
+                                                                   criterion, optimizer,
+                                                                   iteration_step, epoch, best_val_loss,
+                                                                   num_checkpoints,
+                                                                   writer)
+
+            val_loss = evaluate(model, valid_iter, criterion)
             print('-' * 89)
             print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
                   'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
@@ -154,7 +128,10 @@ def main():
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:
                 if args.save_model:
-                    with open('best_model.pt', 'wb') as f:
+                    if not os.path.exists('models'):
+                        os.makedirs(directory)
+
+                    with open('models/{}.pt'.format(run_name), 'wb') as f:
                         torch.save(model, f)
                 best_val_loss = val_loss
 
@@ -164,14 +141,14 @@ def main():
 
     if args.save_model:
         # Load the best saved model.
-        with open('best_model.pt', 'rb') as f:
+        with open('models/{}.pt'.format(run_name), 'rb') as f:
             model = torch.load(f)
             # after load the rnn params are not a continuous chunk of memory
             # this makes them a continuous chunk, and will speed up forward pass
             model.flatten_parameters()
 
         # Run on test data.
-        test_loss = evaluate(test_iter)
+        test_loss = evaluate(model, test_iter, vocab_size)
         print('=' * 89)
         print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
             test_loss, math.exp(test_loss)))
