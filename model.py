@@ -53,7 +53,7 @@ class AttentiveRNNLanguageModel(nn.Module):
                                dropout=dropout_p_encoder)
         if self.attention:
             self.attention_score_module = Attention(hidden_size)
-            self.concatenation_layer = Linear(hidden_size * 2, hidden_size)
+            self.concatenation_layer = nn.Linear(hidden_size * 2, hidden_size)
 
         self.decoder = nn.Linear(hidden_size, vocab_size)
         self.decoder_dropout = nn.Dropout(dropout_p_decoder)
