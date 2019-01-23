@@ -32,7 +32,6 @@ class AttentiveRNNLanguageModel(nn.Module):
                  embedding_size=65,
                  hidden_size=65,
                  n_layers=1,
-                 bidirectional=False,
                  dropout_p_input=0.5,
                  dropout_p_encoder=0.0,
                  dropout_p_decoder=0.5,
@@ -48,17 +47,14 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         self.input_dropout = nn.Dropout(dropout_p_input)
         self.embedding = nn.Embedding(vocab_size, embedding_size)
-        self.encoder = nn.LSTM(embedding_size, hidden_size, n_layers,
-                               batch_first=True, bidirectional=bidirectional,
+        self.encoder = nn.LSTM(embedding_size, hidden_size,
+                               n_layers, batch_first=True,
                                dropout=dropout_p_encoder)
         if self.attention:
-            self.attention_score_module = Attention(
-                hidden_size*(2 if bidirectional else 1))
+            self.attention_score_module = Attention(hidden_size)
 
-        decoder_hidden_size = hidden_size * \
-            (2 if bidirectional else 1) * (2 if attention else 1)
-
-        self.decoder = nn.Linear(decoder_hidden_size, vocab_size)
+        self.decoder = nn.Linear(
+            hidden_size * (2 if attention else 1), vocab_size)
         self.decoder_dropout = nn.Dropout(dropout_p_decoder)
 
         self.init_weights()

@@ -64,8 +64,6 @@ def main(args):
                         help='decoder dropout (default: 0.5)')
 
     parser.add_argument(
-        '--bidirectional', help='Enable bidirectionality in RNN layers (default: False', action='store_true')
-    parser.add_argument(
         '--no-attention', help='Disable attention (default: False', action='store_false')
 
     parser.add_argument('--save-model', action='store_true', default=True,
@@ -89,7 +87,6 @@ def main(args):
     model = AttentiveRNNLanguageModel(vocab_size,
                                       embedding_size=args.embedding_size,
                                       n_layers=args.n_layers,
-                                      bidirectional=args.bidirectional,
                                       attention=args.no_attention,
                                       hidden_size=args.hidden_size,
                                       dropout_p_decoder=args.decoder_dropout,
