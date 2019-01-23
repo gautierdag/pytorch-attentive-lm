@@ -14,7 +14,7 @@ for e in embedding_sizes:
                 for a in attention:
                     params = ["--embedding-size", str(e), '--hidden-size',
                               str(h), '--lr', str(lr), '--n-layers', str(l),
-                              '--batch-size', '256']
+                              '--batch-size', '256', '--epochs', '100']
                     if a:
                         params.append('--no-attention')
                     main(params)
