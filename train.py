@@ -46,7 +46,7 @@ def train(args, model, train_iter, valid_iter,
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         # Note this shouldn't be truly necessery here since we do not propagate the hidden states over mini batches
         # However they have be shown to behave better in steep cliffs loss surfaces
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
         optimizer.step()
 
         total_loss += len(data)*loss.item()
@@ -63,7 +63,7 @@ def train(args, model, train_iter, valid_iter,
                                                      cur_loss, math.exp(cur_loss)))
             writer.add_scalar('training_loss', cur_loss, iteration_step)
             writer.add_scalar('training_perplexity',
-                              math.exp(cur_loss), iteration_step)
+                              min(math.exp(cur_loss), 1000), iteration_step)
             total_loss = 0
             total_num_examples = 0
             start_time = time.time()

@@ -34,8 +34,8 @@ def main(args):
                         help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
                         help='learning rate (default: 0.1)')
-    parser.add_argument('--patience', type=int, default=15, metavar='P',
-                        help='patience (default: 15)')
+    parser.add_argument('--patience', type=int, default=10, metavar='P',
+                        help='patience (default: 10)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
@@ -127,9 +127,9 @@ def main(args):
             writer.add_scalar('validation_loss_at_epoch', val_loss, epoch)
             writer.add_scalar('test_loss_at_epoch', test_loss, epoch)
             writer.add_scalar('validation_perplexity_at_epoch',
-                              math.exp(val_loss), epoch)
+                              min(math.exp(val_loss), 1000), epoch)
             writer.add_scalar('test_perplexity_at_epoch',
-                              math.exp(test_loss), epoch)
+                              min(math.exp(test_loss), 1000), epoch)
 
             print('-' * 89)
             print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
