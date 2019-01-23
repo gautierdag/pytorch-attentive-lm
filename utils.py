@@ -14,8 +14,6 @@ def generate_filename(args):
     if args.patience != 30:
         n += '_patience_' + str(args.patience)
 
-    if args.bidirectional:
-        n += '_bidirect'
     if not args.no_attention:
         n += '_no_attention'
 
