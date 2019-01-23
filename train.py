@@ -22,11 +22,10 @@ def evaluate(model, data_iterator, criterion):
     return total_loss / example_count
 
 
-def train(args, model, train_iter, valid_iter, criterion, optimizer,
-          iteration_step, epoch, best_val_loss,
-          num_checkpoints, writer):
-
-    # num_checkpoints  - number of checkpoints since last loss decrease
+def train(args, model, train_iter, valid_iter,
+          criterion, optimizer,
+          iteration_step, epoch,
+          writer, scheduler):
 
     # Turn on training mode which enables dropout.
     model.train()
@@ -48,7 +47,6 @@ def train(args, model, train_iter, valid_iter, criterion, optimizer,
         # Note this shouldn't be truly necessery here since we do not propagate the hidden states over mini batches
         # However they have be shown to behave better in steep cliffs loss surfaces
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
-
         optimizer.step()
 
         total_loss += len(data)*loss.item()
@@ -73,24 +71,11 @@ def train(args, model, train_iter, valid_iter, criterion, optimizer,
         if iteration_step % args.optimization_step == 0 and iteration_step > 0:
 
             loss = evaluate(model, valid_iter, criterion)
-
+            scheduler.step(loss)
             writer.add_scalar('validation_loss', loss, iteration_step)
-
-            if loss < best_val_loss:
-                best_val_loss = loss
-                num_checkpoints = 0
-            else:
-                num_checkpoints += 1
-
-            if num_checkpoints >= args.patience:
-                # Anneal the learning rate if no improvement has been seen in the validation dataset.
-                print("30 checkpoints since last decrease - decreasing lr rate")
-                for param_group in optimizer.param_groups:
-                    param_group['lr'] *= args.lr_decay
-
-                num_checkpoints = 0
 
             # track learning rate
             writer.add_scalar(
                 'lr', optimizer.param_groups[0]['lr'], iteration_step)
-    return iteration_step, best_val_loss, num_checkpoints
+
+    return iteration_step

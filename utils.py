@@ -8,9 +8,6 @@ def generate_filename(args):
         '_i_d_' + str(args.input_dropout)+'_e_d_'+str(args.rnn_dropout) + \
         '_o_d_' + str(args.decoder_dropout) + '_lr_' + str(args.lr)
 
-    if args.lr_decay != 0.1:
-        n += '_lr_decay_' + str(args.lr_decay)
-
     if args.patience != 30:
         n += '_patience_' + str(args.patience)
 

@@ -34,8 +34,6 @@ def main(args):
                         help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
                         help='learning rate (default: 0.1)')
-    parser.add_argument('--lr-decay', type=float, default=0.1, metavar='LR',
-                        help='learning rate decay (default: 0.1)')
     parser.add_argument('--patience', type=int, default=15, metavar='P',
                         help='patience (default: 15)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
@@ -66,8 +64,6 @@ def main(args):
     parser.add_argument(
         '--no-attention', help='Disable attention (default: False', action='store_false')
 
-    parser.add_argument('--save-model', action='store_true', default=True,
-                        help='For Saving the current Model')
     args = parser.parse_args(args)
 
     run_name = generate_filename(args)
@@ -100,22 +96,27 @@ def main(args):
                            betas=(0.0, 0.999), eps=1e-8, weight_decay=12e-7)
 
     criterion = nn.CrossEntropyLoss()
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', patience=args.patience, verbose=True)
 
     iteration_step = 0
     best_val_loss = 1000
-    num_checkpoints = 0
 
     # At any point you can hit Ctrl + C to break out of training early.
     try:
         # Loop over epochs.
         for epoch in range(1, args.epochs+1):
             epoch_start_time = time.time()
-            iteration_step, val_loss, num_checkpoints = train(args, model, train_iter,
-                                                              valid_iter,
-                                                              criterion, optimizer,
-                                                              iteration_step, epoch, best_val_loss,
-                                                              num_checkpoints,
-                                                              writer)
+            iteration_step = train(args,
+                                   model,
+                                   train_iter,
+                                   valid_iter,
+                                   criterion,
+                                   optimizer,
+                                   iteration_step,
+                                   epoch,
+                                   writer,
+                                   scheduler)
 
             val_loss = evaluate(model, valid_iter, criterion)
             test_loss = evaluate(model, test_iter, criterion)
@@ -134,19 +135,18 @@ def main(args):
             print('-' * 89)
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:
-                if args.save_model:
-                    if not os.path.exists('models'):
-                        os.makedirs('models')
+                if not os.path.exists('models'):
+                    os.makedirs('models')
 
-                    with open('models/{}.pt'.format(run_name), 'wb') as f:
-                        torch.save(model, f)
+                with open('models/{}.pt'.format(run_name), 'wb') as f:
+                    torch.save(model, f)
                 best_val_loss = val_loss
 
     except KeyboardInterrupt:
         print('-' * 89)
         print('Exiting from training early')
 
-    if args.save_model and os.path.exists('models/{}.pt'.format(run_name)):
+    if os.path.exists('models/{}.pt'.format(run_name)):
         # Load the best saved model.
         with open('models/{}.pt'.format(run_name), 'rb') as f:
             model = torch.load(f)
