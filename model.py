@@ -4,11 +4,11 @@ import torch.nn.functional as F
 
 
 class Attention(nn.Module):
-    def __init__(self, feature_dim, hidden_size=65):
+    def __init__(self, feature_dim):
         super(Attention, self).__init__()
 
-        self.attn_1 = nn.Linear(feature_dim, hidden_size)
-        self.attn_2 = nn.Linear(hidden_size, 1)
+        self.attn_1 = nn.Linear(feature_dim, feature_dim)
+        self.attn_2 = nn.Linear(feature_dim, 1)
 
         # inititalize
         nn.init.xavier_uniform_(self.attn_1.weight)
@@ -27,7 +27,7 @@ class Attention(nn.Module):
         attn_weights = self.attn_2(torch.tanh(self.attn_1(x)))
         return attn_weights
 
-        
+
 class AttentiveRNNLanguageModel(nn.Module):
     """
     Implements a language model
@@ -61,13 +61,11 @@ class AttentiveRNNLanguageModel(nn.Module):
                                batch_first=True, bidirectional=bidirectional,
                                dropout=dropout_p_encoder)
 
-        self.attention = Attention(encoder_hidden_size, attention_hidden_size)
+        self.attention = Attention(encoder_hidden_size)
 
-    
         self.decoder_dropout = nn.Dropout(dropout_p_decoder)
         self.decoder = nn.Linear(encoder_hidden_size*2, vocab_size)
         self.init_weights()
-
 
     def forward(self, input):
 
@@ -80,23 +78,20 @@ class AttentiveRNNLanguageModel(nn.Module):
         encoder_output, _ = self.encoder(embedded)
 
         self_attention_scores = self.attention(encoder_output)
-        # mask = torch.ones(sequence_length, sequence_length).tril().view(
-        #     sequence_length, 1, sequence_length, 1).expand(-1, batch_size, -1, self.encoder_hidden_size)
-        # context_vectors = torch.sum(weighted_attention_scores * mask, dim=2).transpose(1,2)
-        # weighted_attention_scores = F.softmax(self_attention_scores * mask, dim=2)
 
         context_vectors = []
-        for t in range(sequence_length):            
-            weighted_attention_scores = F.softmax(self_attention_scores[:,:t+1,:].clone(), dim=1)            
-            context_vectors.append(torch.sum(weighted_attention_scores*encoder_output[:,:t+1,:].clone(), dim=1))
+        for t in range(sequence_length):
+            weighted_attention_scores = F.softmax(
+                self_attention_scores[:, :t+1, :].clone(), dim=1)
+            context_vectors.append(
+                torch.sum(weighted_attention_scores*encoder_output[:, :t+1, :].clone(), dim=1))
 
-        context_vectors = torch.stack(context_vectors).transpose(0,1)
+        context_vectors = torch.stack(context_vectors).transpose(0, 1)
         combined_endoding = torch.cat((context_vectors, encoder_output), dim=2)
         output = self.decoder_dropout(combined_endoding)
         decoded = self.decoder(output.contiguous())
 
         return decoded
-
 
     def flatten_parameters(self):
         """
@@ -113,4 +108,3 @@ class AttentiveRNNLanguageModel(nn.Module):
             -initrange, initrange)
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-initrange, initrange)
-
