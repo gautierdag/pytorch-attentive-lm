@@ -1,7 +1,7 @@
 from main import main
 
 # Finding best hyper parameters for PTB
-embedding_sizes = [500, 650 1000]
+embedding_sizes = [500, 650, 1000]
 hidden_sizes = [500, 650, 1000]
 lrs = [0.1, 0.1, 0.01]
 n_layers = [1, 2, 3]
