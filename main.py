@@ -36,8 +36,8 @@ def main(args):
                         help='learning rate (default: 0.1)')
     parser.add_argument('--lr-decay', type=float, default=0.1, metavar='LR',
                         help='learning rate decay (default: 0.1)')
-    parser.add_argument('--patience', type=int, default=30, metavar='P',
-                        help='patience (default: 30)')
+    parser.add_argument('--patience', type=int, default=15, metavar='P',
+                        help='patience (default: 15)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
@@ -149,7 +149,7 @@ def main(args):
         print('-' * 89)
         print('Exiting from training early')
 
-    if args.save_model:
+    if args.save_model and os.path.exists('models/{}.pt'.format(run_name)):
         # Load the best saved model.
         with open('models/{}.pt'.format(run_name), 'rb') as f:
             model = torch.load(f)
