@@ -18,6 +18,7 @@ def evaluate(model, data_iterator, criterion):
                                                 targets.view(-1)).item()
             example_count += len(data)
 
+    model.train()
     return total_loss / example_count
 
 
@@ -72,6 +73,7 @@ def train(args, model, train_iter, valid_iter, criterion, optimizer,
         if iteration_step % args.optimization_step == 0 and iteration_step > 0:
 
             loss = evaluate(model, valid_iter, criterion)
+
             writer.add_scalar('validation_loss', loss, iteration_step)
 
             if loss < best_val_loss:
