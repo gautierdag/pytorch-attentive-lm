@@ -89,5 +89,6 @@ def train(args, model, train_iter, valid_iter, criterion, optimizer,
                 num_checkpoints = 0
 
             # track learning rate
-            writer.add_scalar('lr', param_group['lr'], iteration_step)
+            writer.add_scalar(
+                'lr', optimizer.param_groups[0]['lr'], iteration_step)
     return iteration_step, best_val_loss, num_checkpoints

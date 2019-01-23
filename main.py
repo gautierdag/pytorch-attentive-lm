@@ -2,6 +2,7 @@ import os
 import argparse
 import time
 import math
+import sys
 
 from tqdm import tqdm
 
@@ -21,7 +22,7 @@ from utils import generate_filename
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main():
+def main(args):
     # Training settings
     parser = argparse.ArgumentParser(
         description='PyTorch Attentive RNN Language Modeling')
@@ -69,7 +70,7 @@ def main():
 
     parser.add_argument('--save-model', action='store_true', default=True,
                         help='For Saving the current Model')
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     run_name = generate_filename(args)
     torch.manual_seed(args.seed)
@@ -157,7 +158,7 @@ def main():
             model.flatten_parameters()
 
         # Run on test data.
-        test_loss = evaluate(model, test_iter, vocab_size)
+        test_loss = evaluate(model, test_iter, criterion)
         print('=' * 89)
         print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
             test_loss, math.exp(test_loss)))
@@ -165,4 +166,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
