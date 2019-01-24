@@ -3,21 +3,25 @@ import torch
 import time
 from tqdm import tqdm
 
+from utils import repackage_hidden
 
-def evaluate(model, data_iterator, criterion):
+
+def evaluate(args, model, data_iterator, criterion):
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0.
     example_count = 0
+
+    hidden = model.init_hidden(args.batch_size)
     with torch.no_grad():
         for _, batch in tqdm(enumerate(data_iterator), total=len(data_iterator), disable=True):
             data, targets = batch.text.t(), batch.target.t().contiguous()
-            output = model(data)
+            output, hidden = model(data, hidden)
             output_flat = output.view(-1, model.vocab_size)
             total_loss += len(data) * criterion(output_flat,
                                                 targets.view(-1)).item()
             example_count += len(data)
-
+            hidden = repackage_hidden(hidden)
     model.train()
     return total_loss / example_count
 
@@ -32,13 +36,15 @@ def train(args, model, train_iter, valid_iter,
     total_num_examples = 0
     start_time = time.time()
     iteration_step = len(train_iter)*(epoch-1)
+
+    hidden = model.init_hidden(args.batch_size)
     for i, batch in tqdm(enumerate(train_iter), total=len(train_iter), disable=True):
             # transpose text to make batch first
         iteration_step += 1
         data, targets = batch.text.t(), batch.target.t().contiguous()
 
         model.zero_grad()
-        output = model(data)
+        output, hidden = model(data, hidden)
         loss = criterion(output.view(-1, model.vocab_size), targets.view(-1))
         loss.backward()
 
@@ -47,6 +53,10 @@ def train(args, model, train_iter, valid_iter,
         # However they have be shown to behave better in steep cliffs loss surfaces
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
         optimizer.step()
+
+        # We detach the hidden state from how it was previously produced.
+        # If we didn't, the model would try backpropagating all the way to start of the dataset.
+        hidden = repackage_hidden(hidden)
 
         total_loss += len(data)*loss.item()
         total_num_examples += len(data)

@@ -36,8 +36,8 @@ def main(args):
                         help='patience (default: 10)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
-    parser.add_argument('--log-interval', type=int, default=100, metavar='N',
-                        help='how many batches to wait before logging training status')
+    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+                        help='how many batches to wait before logging training status (default 10)')
     parser.add_argument('--dataset',
                         default='ptb',
                         const='ptb',
@@ -58,13 +58,15 @@ def main(args):
     parser.add_argument('--decoder-dropout', type=float, default=0.5, metavar='D',
                         help='decoder dropout (default: 0.5)')
 
-    parser.add_argument('--early-stopping-patience', type=int, default=20, metavar='P',
-                        help='early stopping patience (default: 20)')
+    parser.add_argument('--early-stopping-patience', type=int, default=25, metavar='P',
+                        help='early stopping patience (default: 25)')
 
     parser.add_argument(
         '--no-attention', help='Disable attention (default: False', action='store_false')
     parser.add_argument(
         '--tie-weights', help='Tie embedding and decoder weights (default: False', action='store_true')
+    parser.add_argument(
+        '--use-hidden', help='Propagate hidden states over minibatches (default: False', action='store_true')
 
     parser.add_argument('--file-name', action="store",
                         help='Specific filename to save under (default: uses params to generate', default=False)
@@ -97,7 +99,8 @@ def main(args):
                                       dropout_p_decoder=args.decoder_dropout,
                                       dropout_p_encoder=args.rnn_dropout,
                                       dropout_p_input=args.input_dropout,
-                                      tie_weights=args.tie_weights)
+                                      tie_weights=args.tie_weights,
+                                      use_hidden=args.use_hidden)
 
     model.to(device)
 
@@ -107,7 +110,8 @@ def main(args):
 
     criterion = nn.CrossEntropyLoss()
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', patience=args.patience, verbose=True, factor=0.5)
+        optimizer, mode='min', patience=args.patience,
+        verbose=True, factor=0.5)
 
     iteration_step = 0
     early_stopping_counter = 0
@@ -123,8 +127,8 @@ def main(args):
                   criterion, optimizer,
                   epoch, writer)
 
-            val_loss = evaluate(model, valid_iter, criterion)
-            test_loss = evaluate(model, test_iter, criterion)
+            val_loss = evaluate(args, model, valid_iter, criterion)
+            test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
             scheduler.step(val_loss)
@@ -180,7 +184,7 @@ def main(args):
             model.flatten_parameters()
 
         # Run on test data.
-        test_loss = evaluate(model, test_iter, criterion)
+        test_loss = evaluate(args, model, test_iter, criterion)
         print('=' * 89)
         print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
             test_loss, math.exp(test_loss)))

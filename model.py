@@ -36,7 +36,8 @@ class AttentiveRNNLanguageModel(nn.Module):
                  dropout_p_encoder=0.0,
                  dropout_p_decoder=0.5,
                  attention=True,
-                 tie_weights=True):
+                 tie_weights=True,
+                 use_hidden=False):
 
         super(AttentiveRNNLanguageModel, self).__init__()
 
@@ -45,6 +46,7 @@ class AttentiveRNNLanguageModel(nn.Module):
         self.n_layers = n_layers
         self.vocab_size = vocab_size
         self.attention = attention
+        self.use_hidden = use_hidden
 
         self.input_dropout = nn.Dropout(dropout_p_input)
         self.embedding = nn.Embedding(vocab_size, embedding_size)
@@ -72,14 +74,17 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         self.init_weights()
 
-    def forward(self, input):
+    def forward(self, input, hidden):
 
         sequence_length = input.shape[1]
 
         embedded = self.embedding(input)
         embedded = self.input_dropout(embedded)
 
-        encoder_output, _ = self.encoder(embedded)
+        if self.use_hidden:
+            encoder_output, hidden = self.encoder(embedded, hidden)
+        else:
+            encoder_output, hidden = self.encoder(embedded)
 
         if self.attention:
             self_attention_scores = self.attention_score_module(encoder_output)
@@ -101,7 +106,7 @@ class AttentiveRNNLanguageModel(nn.Module):
         output = self.decoder_dropout(encoder_output)
         decoded = self.decoder(output.contiguous())
 
-        return decoded
+        return decoded, hidden
 
     def flatten_parameters(self):
         """
@@ -118,3 +123,9 @@ class AttentiveRNNLanguageModel(nn.Module):
             -initrange, initrange)
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-initrange, initrange)
+
+    def init_hidden(self, batch_size):
+        # initialize hidden state for RNN layer
+        weight = next(self.parameters())
+        return (weight.new_zeros(self.n_layers, batch_size, self.hidden_size),
+                weight.new_zeros(self.n_layers, batch_size, self.hidden_size))
