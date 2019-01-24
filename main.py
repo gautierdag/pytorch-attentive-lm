@@ -28,8 +28,6 @@ def main(args):
         description='PyTorch Attentive RNN Language Modeling')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--optimization-step', type=int, default=100, metavar='N',
-                        help='number of steps between optimizing learning rate')
     parser.add_argument('--epochs', type=int, default=40, metavar='N',
                         help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
@@ -38,7 +36,7 @@ def main(args):
                         help='patience (default: 10)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
-    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+    parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--dataset',
                         default='ptb',
@@ -51,7 +49,6 @@ def main(args):
                         help='embedding size for embedding layer (default: 65)')
     parser.add_argument('--n-layers', type=int, default=1, metavar='N',
                         help='layer size for RNN encoder (default: 1)')
-
     parser.add_argument('--hidden-size', type=int, default=65, metavar='N',
                         help='hidden size for RNN encoder (default: 65)')
     parser.add_argument('--input-dropout', type=float, default=0.5, metavar='D',
@@ -103,7 +100,7 @@ def main(args):
         optimizer, mode='min', patience=args.patience, verbose=True)
 
     iteration_step = 0
-    best_val_loss = 1000
+    best_val_loss = False
 
     # At any point you can hit Ctrl + C to break out of training early.
     try:
@@ -118,23 +115,30 @@ def main(args):
                                    optimizer,
                                    iteration_step,
                                    epoch,
-                                   writer,
-                                   scheduler)
+                                   writer)
 
             val_loss = evaluate(model, valid_iter, criterion)
             test_loss = evaluate(model, test_iter, criterion)
 
+            #possibly update learning rate
+            scheduler.step(val_loss)
+
+            # track learning ratei
+            writer.add_scalar(
+                'lr', optimizer.param_groups[0]['lr'], iteration_step)
+
             writer.add_scalar('validation_loss_at_epoch', val_loss, epoch)
             writer.add_scalar('test_loss_at_epoch', test_loss, epoch)
+
             writer.add_scalar('validation_perplexity_at_epoch',
-                              min(math.exp(val_loss), 1000), epoch)
+                              min(math.exp(min(val_loss, 7)), 1000), epoch)
             writer.add_scalar('test_perplexity_at_epoch',
-                              min(math.exp(test_loss), 1000), epoch)
+                              min(math.exp(min(test_loss, 7)), 1000), epoch)
 
             print('-' * 89)
             print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
                   'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                             val_loss, math.exp(val_loss)))
+                                             val_loss, math.exp(min(val_loss, 7))))
             print('-' * 89)
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:

@@ -74,7 +74,6 @@ class AttentiveRNNLanguageModel(nn.Module):
 
     def forward(self, input):
 
-        batch_size = input.shape[0]
         sequence_length = input.shape[1]
 
         embedded = self.embedding(input)
