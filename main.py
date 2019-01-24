@@ -162,7 +162,8 @@ def main(args):
             writer.add_scalar('best_validation_perplexity_at_epoch',
                               min(math.exp(min(best_val_loss, 7)), 1000), epoch)
             if early_stopping_counter >= args.early_stopping_patience:
-                print("Validation loss has not improved for {}".format{early_stopping_counter})
+                print("Validation loss has not improved for {}".format(
+                    early_stopping_counter))
                 print("Ending Training early at epoch {}".format(epoch))
                 break
 
