@@ -135,7 +135,7 @@ def main(args):
 
             # track learning ratei
             writer.add_scalar(
-                'lr', optimizer.param_groups[0]['lr'], iteration_step)
+                'lr', optimizer.param_groups[0]['lr'], epoch)
 
             writer.add_scalar('validation_loss_at_epoch', val_loss, epoch)
             writer.add_scalar('test_loss_at_epoch', test_loss, epoch)
