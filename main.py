@@ -30,8 +30,8 @@ def main(args):
                         help='input batch size for training (default: 64)')
     parser.add_argument('--epochs', type=int, default=40, metavar='N',
                         help='number of epochs to train (default: 40)')
-    parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
-                        help='learning rate (default: 0.1)')
+    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
+                        help='learning rate (default: 0.01)')
     parser.add_argument('--patience', type=int, default=10, metavar='P',
                         help='patience (default: 10)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
@@ -58,14 +58,24 @@ def main(args):
     parser.add_argument('--decoder-dropout', type=float, default=0.5, metavar='D',
                         help='decoder dropout (default: 0.5)')
 
+    parser.add_argument('--early-stopping-patience', type=int, default=20, metavar='P',
+                        help='early stopping patience (default: 20)')
+
     parser.add_argument(
         '--no-attention', help='Disable attention (default: False', action='store_false')
     parser.add_argument(
         '--tie-weights', help='Tie embedding and decoder weights (default: False', action='store_true')
 
+    parser.add_argument('--file-name', action="store",
+                        help='Specific filename to save under (default: uses params to generate', default=False)
+
     args = parser.parse_args(args)
 
-    run_name = generate_filename(args)
+    if not args.file_name:
+        run_name = generate_filename(args)
+    else:
+        run_name = args.file_name
+
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     writer = SummaryWriter('runs/'+run_name)
@@ -97,9 +107,10 @@ def main(args):
 
     criterion = nn.CrossEntropyLoss()
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', patience=args.patience, verbose=True)
+        optimizer, mode='min', patience=args.patience, verbose=True, factor=0.5)
 
     iteration_step = 0
+    early_stopping_counter = 0
     best_val_loss = False
 
     # At any point you can hit Ctrl + C to break out of training early.
@@ -107,20 +118,15 @@ def main(args):
         # Loop over epochs.
         for epoch in range(1, args.epochs+1):
             epoch_start_time = time.time()
-            iteration_step = train(args,
-                                   model,
-                                   train_iter,
-                                   valid_iter,
-                                   criterion,
-                                   optimizer,
-                                   iteration_step,
-                                   epoch,
-                                   writer)
+            train(args, model,
+                  train_iter, valid_iter,
+                  criterion, optimizer,
+                  epoch, writer)
 
             val_loss = evaluate(model, valid_iter, criterion)
             test_loss = evaluate(model, test_iter, criterion)
 
-            #possibly update learning rate
+            # possibly update learning rate
             scheduler.step(val_loss)
 
             # track learning ratei
@@ -132,6 +138,7 @@ def main(args):
 
             writer.add_scalar('validation_perplexity_at_epoch',
                               min(math.exp(min(val_loss, 7)), 1000), epoch)
+
             writer.add_scalar('test_perplexity_at_epoch',
                               min(math.exp(min(test_loss, 7)), 1000), epoch)
 
@@ -148,6 +155,16 @@ def main(args):
                 with open('models/{}.pt'.format(run_name), 'wb') as f:
                     torch.save(model, f)
                 best_val_loss = val_loss
+                early_stopping_counter = 0
+            else:
+                early_stopping_counter += 1
+
+            writer.add_scalar('best_validation_perplexity_at_epoch',
+                              min(math.exp(min(best_val_loss, 7)), 1000), epoch)
+            if early_stopping_counter >= args.early_stopping_patience:
+                print("Validation loss has not improved for {}".format{early_stopping_counter})
+                print("Ending Training early at epoch {}".format(epoch))
+                break
 
     except KeyboardInterrupt:
         print('-' * 89)

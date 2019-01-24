@@ -24,15 +24,14 @@ def evaluate(model, data_iterator, criterion):
 
 def train(args, model, train_iter, valid_iter,
           criterion, optimizer,
-          iteration_step, epoch,
-          writer,):
+          epoch, writer):
 
     # Turn on training mode which enables dropout.
     model.train()
     total_loss = 0.
     total_num_examples = 0
     start_time = time.time()
-
+    iteration_step = len(train_iter)*(epoch-1)
     for i, batch in tqdm(enumerate(train_iter), total=len(train_iter), disable=True):
             # transpose text to make batch first
         iteration_step += 1
@@ -69,5 +68,3 @@ def train(args, model, train_iter, valid_iter,
             total_loss = 0
             total_num_examples = 0
             start_time = time.time()
-
-    return iteration_step
