@@ -118,7 +118,7 @@ class AttentiveRNNLanguageModel(nn.Module):
         """
         Standard weight initialization
         """
-        initrange = 0.1
+        initrange = 0.05
         self.embedding.weight.data.uniform_(
             -initrange, initrange)
         self.decoder.bias.data.zero_()

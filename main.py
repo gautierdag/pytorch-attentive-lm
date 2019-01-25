@@ -105,13 +105,15 @@ def main(args):
     model.to(device)
 
     # Training Set Up
-    optimizer = optim.Adam(model.parameters(), lr=args.lr,
-                           betas=(0.0, 0.999), eps=1e-8, weight_decay=12e-7)
+    # optimizer = optim.Adam(model.parameters(), lr=args.lr,
+    #                        betas=(0.0, 0.999), eps=1e-8, weight_decay=12e-7)
+
+    optimizer = optim.SGD(model.parameters(), lr=1.0)
 
     criterion = nn.CrossEntropyLoss()
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', patience=args.patience,
-        verbose=True, factor=0.5)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode='min', patience=args.patience,
+    #     verbose=True, factor=0.5)
 
     iteration_step = 0
     early_stopping_counter = 0
@@ -121,6 +123,10 @@ def main(args):
     try:
         # Loop over epochs.
         for epoch in range(1, args.epochs+1):
+
+            current_learning_rate = 0.5 ** max(epoch - 12, 0.0)
+            optimizer.param_groups[0]['lr'] = current_learning_rate
+
             epoch_start_time = time.time()
             train(args, model,
                   train_iter, valid_iter,
