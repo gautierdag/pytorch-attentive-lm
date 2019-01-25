@@ -137,7 +137,7 @@ def main(args):
             test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
-            scheduler.step(val_loss)
+            # scheduler.step(val_loss)
 
             # track learning ratei
             writer.add_scalar(
