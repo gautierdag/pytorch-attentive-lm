@@ -91,9 +91,9 @@ class AttentiveRNNLanguageModel(nn.Module):
             context_vectors = []
             for t in range(sequence_length):
                 weighted_attention_scores = F.softmax(
-                    self_attention_scores[:, :t+1, :].clone(), dim=1)
+                    self_attention_scores[:, :t + 1, :].clone(), dim=1)
                 context_vectors.append(
-                    torch.sum(weighted_attention_scores*encoder_output[:, :t+1, :].clone(), dim=1))
+                    torch.sum(weighted_attention_scores * encoder_output[:, :t + 1, :].clone(), dim=1))
 
             context_vectors = torch.stack(context_vectors).transpose(0, 1)
             combined_encoding = torch.cat(

@@ -93,7 +93,7 @@ def main(args):
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    writer = SummaryWriter('runs/'+run_name)
+    writer = SummaryWriter('runs/' + run_name)
 
     if args.dataset == 'wiki-02':
         train_iter, valid_iter, test_iter = WikiText2.iters(
@@ -137,7 +137,7 @@ def main(args):
     # At any point you can hit Ctrl + C to break out of training early.
     try:
         # Loop over epochs.
-        for epoch in range(1, args.epochs+1):
+        for epoch in range(1, args.epochs + 1):
 
             if args.salton_lr_schedule:
                 current_learning_rate = 0.5 ** max(epoch - 12, 0.0)
