@@ -19,7 +19,7 @@ from model import AttentiveRNNLanguageModel
 from train import evaluate, train
 from utils import generate_filename
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def main(args):
@@ -33,7 +33,7 @@ def main(args):
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
     parser.add_argument('--patience', type=int, default=10, metavar='P',
-                        help='patience (default: 10)')
+                        help='patience for lr decrease (default: 10)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
@@ -66,6 +66,10 @@ def main(args):
                         nargs='?',
                         choices=['sgd', 'adam'],
                         help='Select which optimizer (default: %(default)s)')
+
+    parser.add_argument('--salton-lr-schedule',
+                        help='Enables same training schedule as Salton et al. 2017 (default: False)',
+                        action='store_false')
 
     parser.add_argument('--early-stopping-patience', type=int, default=25, metavar='P',
                         help='early stopping patience (default: 25)')
@@ -117,7 +121,7 @@ def main(args):
     if args.optim == 'sgd':
         optimizer = optim.SGD(model.parameters(),
                               lr=args.lr, weight_decay=12e-7)
-    if args.optim == "adam":
+    if args.optim == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr,
                                betas=(0.0, 0.999), eps=1e-8,
                                weight_decay=12e-7)
@@ -135,8 +139,9 @@ def main(args):
         # Loop over epochs.
         for epoch in range(1, args.epochs+1):
 
-            current_learning_rate = 0.5 ** max(epoch - 12, 0.0)
-            optimizer.param_groups[0]['lr'] = current_learning_rate
+            if args.salton_lr_schedule:
+                current_learning_rate = 0.5 ** max(epoch - 12, 0.0)
+                optimizer.param_groups[0]['lr'] = current_learning_rate
 
             epoch_start_time = time.time()
             train(args, model,
