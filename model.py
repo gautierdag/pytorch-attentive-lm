@@ -114,15 +114,14 @@ class AttentiveRNNLanguageModel(nn.Module):
         """
         self.encoder.flatten_parameters()
 
-    def init_weights(self):
+    def init_weights(self, init_range=0.1):
         """
         Standard weight initialization
         """
-        initrange = 0.05
         self.embedding.weight.data.uniform_(
-            -initrange, initrange)
+            -init_range, init_range)
         self.decoder.bias.data.zero_()
-        self.decoder.weight.data.uniform_(-initrange, initrange)
+        self.decoder.weight.data.uniform_(-init_range, init_range)
 
     def init_hidden(self, batch_size):
         # initialize hidden state for RNN layer

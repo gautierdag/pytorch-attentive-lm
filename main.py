@@ -57,6 +57,15 @@ def main(args):
                         help='rnn dropout (default: 0.0)')
     parser.add_argument('--decoder-dropout', type=float, default=0.5, metavar='D',
                         help='decoder dropout (default: 0.5)')
+    parser.add_argument('--clip', type=float, default=0.25, metavar='N',
+                        help='value at which to clip the norm of gradients (default: 0.25)')
+
+    parser.add_argument('--optim',
+                        default='sgd',
+                        const='sgd',
+                        nargs='?',
+                        choices=['sgd', 'adam'],
+                        help='Select which optimizer (default: %(default)s)')
 
     parser.add_argument('--early-stopping-patience', type=int, default=25, metavar='P',
                         help='early stopping patience (default: 25)')
@@ -105,15 +114,18 @@ def main(args):
     model.to(device)
 
     # Training Set Up
-    # optimizer = optim.Adam(model.parameters(), lr=args.lr,
-    #                        betas=(0.0, 0.999), eps=1e-8, weight_decay=12e-7)
-
-    optimizer = optim.SGD(model.parameters(), lr=1.0)
+    if args.optim == 'sgd':
+        optimizer = optim.SGD(model.parameters(),
+                              lr=args.lr, weight_decay=12e-7)
+    if args.optim == "adam":
+        optimizer = optim.Adam(model.parameters(), lr=args.lr,
+                               betas=(0.0, 0.999), eps=1e-8,
+                               weight_decay=12e-7)
 
     criterion = nn.CrossEntropyLoss()
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, mode='min', patience=args.patience,
-    #     verbose=True, factor=0.5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', patience=args.patience,
+        verbose=True, factor=0.5)
 
     early_stopping_counter = 0
     best_val_loss = False
@@ -136,7 +148,7 @@ def main(args):
             test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
-            # scheduler.step(val_loss)
+            scheduler.step(val_loss)
 
             # track learning ratei
             writer.add_scalar(

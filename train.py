@@ -51,7 +51,7 @@ def train(args, model, train_iter, valid_iter,
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         # Note this shouldn't be truly necessery here since we do not propagate the hidden states over mini batches
         # However they have be shown to behave better in steep cliffs loss surfaces
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
         optimizer.step()
 
         # We detach the hidden state from how it was previously produced.
