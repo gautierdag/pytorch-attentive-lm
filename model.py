@@ -91,9 +91,9 @@ class AttentiveRNNLanguageModel(nn.Module):
             context_vectors = []
             for t in range(sequence_length):
                 weighted_attention_scores = F.softmax(
-                    self_attention_scores[:, :t+1, :].clone(), dim=1)
+                    self_attention_scores[:, :t + 1, :].clone(), dim=1)
                 context_vectors.append(
-                    torch.sum(weighted_attention_scores*encoder_output[:, :t+1, :].clone(), dim=1))
+                    torch.sum(weighted_attention_scores * encoder_output[:, :t + 1, :].clone(), dim=1))
 
             context_vectors = torch.stack(context_vectors).transpose(0, 1)
             combined_encoding = torch.cat(
@@ -114,15 +114,14 @@ class AttentiveRNNLanguageModel(nn.Module):
         """
         self.encoder.flatten_parameters()
 
-    def init_weights(self):
+    def init_weights(self, init_range=0.1):
         """
         Standard weight initialization
         """
-        initrange = 0.1
         self.embedding.weight.data.uniform_(
-            -initrange, initrange)
+            -init_range, init_range)
         self.decoder.bias.data.zero_()
-        self.decoder.weight.data.uniform_(-initrange, initrange)
+        self.decoder.weight.data.uniform_(-init_range, init_range)
 
     def init_hidden(self, batch_size):
         # initialize hidden state for RNN layer

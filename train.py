@@ -14,7 +14,8 @@ def evaluate(args, model, data_iterator, criterion):
 
     hidden = model.init_hidden(args.batch_size)
     with torch.no_grad():
-        for _, batch in tqdm(enumerate(data_iterator), total=len(data_iterator), disable=True):
+        for _, batch in tqdm(enumerate(data_iterator),
+                             total=len(data_iterator), disable=True):
             data, targets = batch.text.t(), batch.target.t().contiguous()
             output, hidden = model(data, hidden)
             output_flat = output.view(-1, model.vocab_size)
@@ -35,7 +36,7 @@ def train(args, model, train_iter, valid_iter,
     total_loss = 0.
     total_num_examples = 0
     start_time = time.time()
-    iteration_step = len(train_iter)*(epoch-1)
+    iteration_step = len(train_iter) * (epoch - 1)
 
     hidden = model.init_hidden(args.batch_size)
     for i, batch in tqdm(enumerate(train_iter), total=len(train_iter), disable=True):
@@ -51,14 +52,15 @@ def train(args, model, train_iter, valid_iter,
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         # Note this shouldn't be truly necessery here since we do not propagate the hidden states over mini batches
         # However they have be shown to behave better in steep cliffs loss surfaces
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
         optimizer.step()
 
         # We detach the hidden state from how it was previously produced.
-        # If we didn't, the model would try backpropagating all the way to start of the dataset.
+        # If we didn't, the model would try backpropagating all the way to start
+        # of the dataset.
         hidden = repackage_hidden(hidden)
 
-        total_loss += len(data)*loss.item()
+        total_loss += len(data) * loss.item()
         total_num_examples += len(data)
 
         if iteration_step % args.log_interval == 0 and i > 0:
@@ -69,7 +71,7 @@ def train(args, model, train_iter, valid_iter,
             print('| epoch {:3d} | {}/{} batches | ms/batch {:5.2f} \
                 | loss {:5.2f} | ppl {:8.2f}'.format(epoch,
                                                      iteration_step, len(
-                                                         train_iter)*args.epochs,
+                                                         train_iter) * args.epochs,
                                                      elapsed * 1000 / args.log_interval,
                                                      cur_loss, min(math.exp(exp_cur_loss), 1000)))
             writer.add_scalar('training_loss', cur_loss, iteration_step)

@@ -19,7 +19,7 @@ from model import AttentiveRNNLanguageModel
 from train import evaluate, train
 from utils import generate_filename
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def main(args):
@@ -33,7 +33,7 @@ def main(args):
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
     parser.add_argument('--patience', type=int, default=10, metavar='P',
-                        help='patience (default: 10)')
+                        help='patience for lr decrease (default: 10)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
@@ -57,6 +57,19 @@ def main(args):
                         help='rnn dropout (default: 0.0)')
     parser.add_argument('--decoder-dropout', type=float, default=0.5, metavar='D',
                         help='decoder dropout (default: 0.5)')
+    parser.add_argument('--clip', type=float, default=0.25, metavar='N',
+                        help='value at which to clip the norm of gradients (default: 0.25)')
+
+    parser.add_argument('--optim',
+                        default='sgd',
+                        const='sgd',
+                        nargs='?',
+                        choices=['sgd', 'adam'],
+                        help='Select which optimizer (default: %(default)s)')
+
+    parser.add_argument('--salton-lr-schedule',
+                        help='Enables same training schedule as Salton et al. 2017 (default: False)',
+                        action='store_false')
 
     parser.add_argument('--early-stopping-patience', type=int, default=25, metavar='P',
                         help='early stopping patience (default: 25)')
@@ -80,7 +93,7 @@ def main(args):
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    writer = SummaryWriter('runs/'+run_name)
+    writer = SummaryWriter('runs/' + run_name)
 
     if args.dataset == 'wiki-02':
         train_iter, valid_iter, test_iter = WikiText2.iters(
@@ -105,22 +118,31 @@ def main(args):
     model.to(device)
 
     # Training Set Up
-    optimizer = optim.Adam(model.parameters(), lr=args.lr,
-                           betas=(0.0, 0.999), eps=1e-8, weight_decay=12e-7)
+    if args.optim == 'sgd':
+        optimizer = optim.SGD(model.parameters(),
+                              lr=args.lr, weight_decay=12e-7)
+    if args.optim == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr,
+                               betas=(0.0, 0.999), eps=1e-8,
+                               weight_decay=12e-7)
 
     criterion = nn.CrossEntropyLoss()
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', patience=args.patience,
         verbose=True, factor=0.5)
 
-    iteration_step = 0
     early_stopping_counter = 0
     best_val_loss = False
 
     # At any point you can hit Ctrl + C to break out of training early.
     try:
         # Loop over epochs.
-        for epoch in range(1, args.epochs+1):
+        for epoch in range(1, args.epochs + 1):
+
+            if args.salton_lr_schedule:
+                current_learning_rate = 0.5 ** max(epoch - 12, 0.0)
+                optimizer.param_groups[0]['lr'] = current_learning_rate
+
             epoch_start_time = time.time()
             train(args, model,
                   train_iter, valid_iter,
