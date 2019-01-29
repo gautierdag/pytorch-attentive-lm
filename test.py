@@ -16,9 +16,8 @@ from main import main
 # main(params_merity)
 
 
-# Finding baselines
-params_attentive_lm = ["--embedding-size", '650', '--hidden-size', '650', '--n-layers', '2',
-                       '--batch-size', '32', '--epochs', '500', '--seed', '1701',
-                       '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '1.0',
-                       '--tie-weights', '--file-name', 'attentive_lm_baseline_true_learning']
+params_attentive_lm = ["--embedding-size", '250', '--hidden-size', '250', '--n-layers', '2',
+                       '--batch-size', '32', '--epochs', '500', '--seed', '123',
+                       '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '30',
+                       '--tie-weights', '--file-name', 'test']
 main(params_attentive_lm)

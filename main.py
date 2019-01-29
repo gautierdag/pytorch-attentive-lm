@@ -75,7 +75,11 @@ def main(args):
                         help='early stopping patience (default: 25)')
 
     parser.add_argument(
-        '--no-attention', help='Disable attention (default: False', action='store_false')
+        '--attention', help='Disable attention (default: False', action='store_true')
+
+    parser.add_argument(
+        '--no-positional-attention', help='Disable positional attention (default: False', action='store_false')
+
     parser.add_argument(
         '--tie-weights', help='Tie embedding and decoder weights (default: False', action='store_true')
     parser.add_argument(
@@ -107,7 +111,8 @@ def main(args):
     model = AttentiveRNNLanguageModel(vocab_size,
                                       embedding_size=args.embedding_size,
                                       n_layers=args.n_layers,
-                                      attention=args.no_attention,
+                                      attention=args.attention,
+                                      positional_attention=args.no_positional_attention,
                                       hidden_size=args.hidden_size,
                                       dropout_p_decoder=args.decoder_dropout,
                                       dropout_p_encoder=args.rnn_dropout,

@@ -10,8 +10,8 @@ def generate_filename(args):
         str(args.n_layers) + '_hidden_size_' + str(args.hidden_size)
     if args.tie_weights:
         n += '_tied_weights'
-    if not args.no_attention:
-        n += '_no_attention'
+    if args.attention:
+        n += '_attention'
     return n
 
 
