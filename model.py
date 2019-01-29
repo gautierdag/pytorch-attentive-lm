@@ -42,7 +42,7 @@ class PositionalAttention(nn.Module):
     def __init__(self,
                  feature_dim,
                  positioning_embedding=20,
-                 num_building_blocks=4,
+                 num_building_blocks=3,
                  max_len=35):
         super(PositionalAttention, self).__init__()
         self.num_building_blocks = num_building_blocks
@@ -147,7 +147,7 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         # concatenation FF Layer to combine context and prev output
         if self.attention or self.positional_attention:
-            self.concatenation_layer = nn.Linear(feature_dim * 2, feature_dim)
+            self.concatenation_layer = nn.Linear(hidden_size * 2, hidden_size)
 
         if self.attention and self.positional_attention:
             raise NotImplementedError(
@@ -187,7 +187,8 @@ class AttentiveRNNLanguageModel(nn.Module):
             context_vectors = self.position_score_module(encoder_output)
 
         if self.attention or self.positional_attention:
-            combined_encoding = torch.cat((context_vectors, x), dim=2)
+            combined_encoding = torch.cat(
+                (context_vectors, encoder_output), dim=2)
             # concatenation layer
             encoder_output = torch.tanh(
                 self.concatenation_layer(combined_encoding))
