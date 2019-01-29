@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 
 class Attention(nn.Module):
@@ -9,8 +10,6 @@ class Attention(nn.Module):
 
         self.attn_1 = nn.Linear(feature_dim, feature_dim)
         self.attn_2 = nn.Linear(feature_dim, 1)
-
-        self.concatenation_layer = nn.Linear(feature_dim * 2, feature_dim)
 
         # inititalize
         nn.init.xavier_uniform_(self.attn_1.weight)
@@ -36,14 +35,7 @@ class Attention(nn.Module):
                 torch.sum(weighted_attention_scores * x[:, :t + 1, :].clone(), dim=1))
 
         context_vectors = torch.stack(context_vectors).transpose(0, 1)
-        combined_encoding = torch.cat(
-            (context_vectors, x), dim=2)
-
-        # concatenation layer
-        combined_output = torch.tanh(
-            self.concatenation_layer(combined_encoding))
-
-        return combined_output
+        return context_vectors
 
 
 class PositionalAttention(nn.Module):
@@ -62,42 +54,57 @@ class PositionalAttention(nn.Module):
         self.mu_generator = nn.Linear(
             positioning_embedding, num_building_blocks)
 
+    @staticmethod
+    def normal_pdf(x, mu, sigma):
+        """Return normalized Gaussian_pdf(x)."""
+        x = torch.exp(-(x - mu)**2 / (2 * sigma**2))
+        x = F.normalize(x)
+        return x
+
     def forward(self, x):
 
         batch_size = x.shape[0]
         sequence_length = x.shape[1]
+
         positioning_weights, _ = self.positioning_generator(x)
-        mu_weights = self.mu_generator(positioning_weights)
-        sigma_weights = self.sigma_generator(positioning_weights)
+        mu_weights = F.relu(self.mu_generator(positioning_weights))
+        sigma_weights = torch.sigmoid(
+            self.sigma_generator(positioning_weights))
 
         prev_mu = torch.zeros(batch_size)
-        building_blocks = torch.ones((batch_size, self.num_building_blocks))
+
         # Attend for each time step using the previous context
         position_vectors = []  # Which positions to attend to
         for j in range(sequence_length):
             # For each timestep the context that is attented grows
             # as there are more available previous hidden states
 
+            building_blocks = torch.ones(
+                (batch_size, self.num_building_blocks))
             building_blocks[:, 0] = prev_mu
             building_blocks[:, 1] = 1/sequence_length
             building_blocks[:, 2] = (j+1)/sequence_length
 
-            mu = mu_weights[:, j, :].clone() @ building_blocks
-            prev_mu = mu
+            mu = torch.bmm(mu_weights[:, j, :].clone().unsqueeze(
+                1), building_blocks.unsqueeze(2)).squeeze(1)
+            prev_mu = mu.squeeze()
+
             sigma = sigma_weights[:, j, :]
 
-            gaussian_weighted_attention = torch.zeros(
-                (50, 50)).normal_(mean=mu, std=sigma)
+            rel_counter = torch.arange(
+                j+1, dtype=torch.float).unsqueeze(0) / (j+1)
 
-            current_encoded_sequence = x[:, :j+1, :].clone()
-            applied_positional_attention = current_encoded_sequence * gaussian_weighted_attention
+            gaussian_weighted_attention = self.normal_pdf(
+                rel_counter.expand(batch_size, -1), mu, sigma).unsqueeze(2)
+
+            # multiply the weights with the hiddene encoded states found till this point
+            applied_positional_attention = x[:, :j+1,
+                                             :].clone() * gaussian_weighted_attention
             position_vectors.append(
                 torch.sum(applied_positional_attention, dim=1))
 
         context_vectors = torch.stack(position_vectors).transpose(0, 1)
-        combined_encoding = torch.cat((context_vectors, x), dim=2)
-
-        return combined_encoding
+        return context_vectors
 
 
 class AttentiveRNNLanguageModel(nn.Module):
@@ -138,6 +145,10 @@ class AttentiveRNNLanguageModel(nn.Module):
         if self.positional_attention:
             self.position_score_module = PositionalAttention(hidden_size)
 
+        # concatenation FF Layer to combine context and prev output
+        if self.attention or self.positional_attention:
+            self.concatenation_layer = nn.Linear(feature_dim * 2, feature_dim)
+
         if self.attention and self.positional_attention:
             raise NotImplementedError(
                 "Attention and Positional Attention cannot be both activated")
@@ -170,9 +181,16 @@ class AttentiveRNNLanguageModel(nn.Module):
             encoder_output, hidden = self.encoder(embedded)
 
         if self.attention:
-            encoder_output = self.attention_score_module(encoder_output)
+            context_vectors = self.attention_score_module(encoder_output)
+
         if self.positional_attention:
-            encoder_output = self.position_score_module(encoder_output)
+            context_vectors = self.position_score_module(encoder_output)
+
+        if self.attention or self.positional_attention:
+            combined_encoding = torch.cat((context_vectors, x), dim=2)
+            # concatenation layer
+            encoder_output = torch.tanh(
+                self.concatenation_layer(combined_encoding))
 
         output = self.decoder_dropout(encoder_output)
         decoded = self.decoder(output.contiguous())
