@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class Attention(nn.Module):
     def __init__(self, feature_dim):
@@ -71,7 +73,12 @@ class PositionalAttention(nn.Module):
         sigma_weights = torch.sigmoid(
             self.sigma_generator(positioning_weights))
 
-        prev_mu = torch.zeros(batch_size)
+        prev_mu = torch.zeros(batch_size, device=device)
+        building_blocks = torch.ones(
+            (sequence_length, batch_size, self.num_building_blocks), device=device)
+        building_blocks[:, :, 1] = 1/sequence_length
+        building_blocks[:, :, 2] = ((torch.arange(
+            sequence_length, dtype=torch.float, device=device)+1).unsqueeze(1).expand(-1, batch_size) / sequence_length)
 
         # Attend for each time step using the previous context
         position_vectors = []  # Which positions to attend to
@@ -79,20 +86,17 @@ class PositionalAttention(nn.Module):
             # For each timestep the context that is attented grows
             # as there are more available previous hidden states
 
-            building_blocks = torch.ones(
-                (batch_size, self.num_building_blocks))
-            building_blocks[:, 0] = prev_mu
-            building_blocks[:, 1] = 1/sequence_length
-            building_blocks[:, 2] = (j+1)/sequence_length
+            bb = building_blocks[j].clone()
+            bb[:, 0] = prev_mu
 
             mu = torch.bmm(mu_weights[:, j, :].clone().unsqueeze(
-                1), building_blocks.unsqueeze(2)).squeeze(1)
+                1), bb.unsqueeze(2)).squeeze(1)
             prev_mu = mu.squeeze()
 
             sigma = sigma_weights[:, j, :]
 
             rel_counter = torch.arange(
-                j+1, dtype=torch.float).unsqueeze(0) / (j+1)
+                j+1, dtype=torch.float, device=device).unsqueeze(0) / (j+1)
 
             gaussian_weighted_attention = self.normal_pdf(
                 rel_counter.expand(batch_size, -1), mu, sigma).unsqueeze(2)
