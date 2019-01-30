@@ -11,6 +11,8 @@ else:
     import matplotlib
     import matplotlib.pyplot as plt
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 def generate_filename(args):
     """
