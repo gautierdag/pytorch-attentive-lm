@@ -19,14 +19,20 @@ class Attention(nn.Module):
         self.attn_1.bias.data.fill_(0.0)
         self.attn_2.bias.data.fill_(0.0)
 
-    def forward(self, x):
-        # Input x is encoder output
+    def forward(self, x, return_attention=False):
+        """
+        Input x is encoder output
+        return_attention decides whether to return
+        attention scores over the encoder output
+        """
         sequence_length = x.shape[1]
 
         self_attention_scores = self.attn_2(torch.tanh(self.attn_1(x)))
 
         # Attend for each time step using the previous context
         context_vectors = []
+        attention_vectors = []
+
         for t in range(sequence_length):
             # For each timestep the context that is attented grows
             # as there are more available previous hidden states
@@ -36,8 +42,12 @@ class Attention(nn.Module):
             context_vectors.append(
                 torch.sum(weighted_attention_scores * x[:, :t + 1, :].clone(), dim=1))
 
+            if return_attention:
+                attention_vectors.append(weighted_attention_scores)
+
         context_vectors = torch.stack(context_vectors).transpose(0, 1)
-        return context_vectors
+
+        return context_vectors, attention_vectors
 
 
 class PositionalAttention(nn.Module):
@@ -63,7 +73,12 @@ class PositionalAttention(nn.Module):
         x = F.normalize(x)
         return x
 
-    def forward(self, x):
+    def forward(self, x, return_attention=False):
+        """
+        Input x is encoder output
+        return_attention decides whether to return
+        attention scores over the encoder output
+        """
 
         batch_size = x.shape[0]
         sequence_length = x.shape[1]
@@ -82,6 +97,8 @@ class PositionalAttention(nn.Module):
 
         # Attend for each time step using the previous context
         position_vectors = []  # Which positions to attend to
+        attention_vectors = []
+
         for j in range(sequence_length):
             # For each timestep the context that is attented grows
             # as there are more available previous hidden states
@@ -107,8 +124,12 @@ class PositionalAttention(nn.Module):
             position_vectors.append(
                 torch.sum(applied_positional_attention, dim=1))
 
+            if return_attention:
+                attention_vectors.append(gaussian_weighted_attention)
+
         context_vectors = torch.stack(position_vectors).transpose(0, 1)
-        return context_vectors
+
+        return context_vectors, attention_vectors
 
 
 class AttentiveRNNLanguageModel(nn.Module):
@@ -173,7 +194,7 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         self.init_weights()
 
-    def forward(self, input, hidden):
+    def forward(self, input, hidden, return_attention=False):
 
         embedded = self.embedding(input)
         embedded = self.input_dropout(embedded)
@@ -184,10 +205,12 @@ class AttentiveRNNLanguageModel(nn.Module):
             encoder_output, hidden = self.encoder(embedded)
 
         if self.attention:
-            context_vectors = self.attention_score_module(encoder_output)
+            context_vectors, attention_score = self.attention_score_module(
+                encoder_output, return_attention=return_attention)
 
         if self.positional_attention:
-            context_vectors = self.position_score_module(encoder_output)
+            context_vectors, attention_score = self.position_score_module(
+                encoder_output, return_attention=return_attention)
 
         if self.attention or self.positional_attention:
             combined_encoding = torch.cat(
@@ -198,6 +221,9 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         output = self.decoder_dropout(encoder_output)
         decoded = self.decoder(output.contiguous())
+
+        if return_attention:
+            return decoded, hidden, attention_score
 
         return decoded, hidden
 

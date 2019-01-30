@@ -17,7 +17,7 @@ from tensorboardX import SummaryWriter
 
 from model import AttentiveRNNLanguageModel
 from train import evaluate, train
-from utils import generate_filename
+from utils import generate_filename, visualize
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -32,8 +32,8 @@ def main(args):
                         help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
-    parser.add_argument('--patience', type=int, default=10, metavar='P',
-                        help='patience for lr decrease (default: 10)')
+    parser.add_argument('--patience', type=int, default=5, metavar='P',
+                        help='patience for lr decrease (default: 5)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
                         help='random seed (default: 123)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',

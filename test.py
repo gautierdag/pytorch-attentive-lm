@@ -25,6 +25,6 @@ from main import main
 
 positional_lm = ["--embedding-size", '250', '--hidden-size', '250', '--n-layers', '2',
                  '--batch-size', '32', '--epochs', '500', '--seed', '123',
-                 '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '30',
+                 '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '0.1',
                  '--tie-weights', '--file-name', 'positional_test']
 main(positional_lm)

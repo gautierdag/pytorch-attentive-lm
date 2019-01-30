@@ -24,3 +24,7 @@ def repackage_hidden(h):
         return h.detach()
     else:
         return tuple(repackage_hidden(v) for v in h)
+
+
+def visualize(data_iter):
+    print(len(data_iter))
