@@ -7,6 +7,9 @@ if sys_pf == 'darwin':
     import matplotlib
     matplotlib.use("TkAgg")
     import matplotlib.pyplot as plt
+else:
+    import matplotlib
+    import matplotlib.pyplot as plt
 
 
 def generate_filename(args):
