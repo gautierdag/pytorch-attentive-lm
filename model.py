@@ -110,7 +110,6 @@ class PositionalAttention(nn.Module):
 class AttentiveRNNLanguageModel(nn.Module):
     """
     Implements an Attentive Language Model according to http://www.aclweb.org/anthology/I17-1045
-
     """
 
     def __init__(self, vocab_size,

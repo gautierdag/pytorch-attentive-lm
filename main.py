@@ -75,7 +75,7 @@ def main(args):
                         help='early stopping patience (default: 25)')
 
     parser.add_argument(
-        '--attention', help='Disable attention (default: False', action='store_true')
+        '--attention', help='Enable standard attention (default: False', action='store_true')
 
     parser.add_argument(
         '--no-positional-attention', help='Disable positional attention (default: False', action='store_false')
