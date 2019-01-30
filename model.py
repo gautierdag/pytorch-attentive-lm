@@ -55,8 +55,7 @@ class PositionalAttention(nn.Module):
     def __init__(self,
                  feature_dim,
                  positioning_embedding=20,
-                 num_building_blocks=3,
-                 max_len=35):
+                 num_building_blocks=3):
         super(PositionalAttention, self).__init__()
         self.num_building_blocks = num_building_blocks
 
@@ -154,6 +153,7 @@ class AttentiveRNNLanguageModel(nn.Module):
                  dropout_p_decoder=0.5,
                  attention=False,
                  positional_attention=True,
+                 positioning_embedding=20,
                  tie_weights=True,
                  use_hidden=False):
 
@@ -175,7 +175,8 @@ class AttentiveRNNLanguageModel(nn.Module):
         if self.attention:
             self.attention_score_module = Attention(hidden_size)
         if self.positional_attention:
-            self.position_score_module = PositionalAttention(hidden_size)
+            self.position_score_module = PositionalAttention(
+                hidden_size, positioning_embedding=positioning_embedding)
 
         # concatenation FF Layer to combine context and prev output
         if self.attention or self.positional_attention:
@@ -240,8 +241,6 @@ class AttentiveRNNLanguageModel(nn.Module):
         Flatten parameters of all reccurrent components in the model.
         """
         self.encoder.flatten_parameters()
-        if self.attention:
-            self.attention_score_module.flatten_parameters()
         if self.positional_attention:
             self.position_score_module.flatten_parameters()
 
