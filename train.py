@@ -6,7 +6,8 @@ from tqdm import tqdm
 from utils import repackage_hidden, save_attention_visualization
 
 
-def evaluate(args, model, data_iterator, criterion, save_attention=False):
+def evaluate(args, model, data_iterator, criterion,
+             save_attention=False, epoch=0):
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0.
@@ -24,7 +25,7 @@ def evaluate(args, model, data_iterator, criterion, save_attention=False):
             example_count += len(data)
             hidden = repackage_hidden(hidden)
     if (save_attention):
-        save_attention_visualization(args, data_iterator, batch, model)
+        save_attention_visualization(args, data_iterator, batch, model, epoch)
     model.train()
     return total_loss / example_count
 

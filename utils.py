@@ -37,7 +37,7 @@ def repackage_hidden(h):
         return tuple(repackage_hidden(v) for v in h)
 
 
-def save_attention_visualization(args, data_iter, batch, model):
+def save_attention_visualization(args, data_iter, batch, model, epoch):
 
     vocab = data_iter.dataset.fields['text'].vocab
 
@@ -49,10 +49,10 @@ def save_attention_visualization(args, data_iter, batch, model):
 
     output_flat = output.view(-1, model.vocab_size)
 
-    plot_attention(vocab, data, targets, attention_weights)
+    plot_attention(vocab, data, targets, attention_weights, epoch)
 
 
-def plot_attention(vocab, data, targets, attention_weights):
+def plot_attention(vocab, data, targets, attention_weights, epoch):
     batch_size = data.shape[0]
     seq_length = data.shape[1]
 
@@ -80,5 +80,6 @@ def plot_attention(vocab, data, targets, attention_weights):
     ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
 
-    timestr = time.strftime("fig_generated_at_%H%M%S")
-    plt.savefig('runs/'+timestr)
+    timestr = time.strftime("fig_generated_at_%H%M%S_for_epoch_")
+    plt.savefig('runs/'+timestr+str(epoch))
+    plt.close()

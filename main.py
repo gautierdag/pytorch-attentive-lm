@@ -90,11 +90,6 @@ def main(args):
 
     args = parser.parse_args(args)
 
-    # TEST
-    args.attention = True
-    args.no_positional_attention = False
-    args.log_interval = 100
-
     if not args.file_name:
         run_name = generate_filename(args)
     else:
@@ -160,7 +155,7 @@ def main(args):
                   epoch, writer)
 
             val_loss = evaluate(args, model, valid_iter,
-                                criterion, save_attention=True)
+                                criterion, save_attention=True, epoch=epoch)
             test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
