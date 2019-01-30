@@ -44,7 +44,7 @@ class Attention(nn.Module):
 
             if return_attention:
                 attention_vectors.append(
-                    weighted_attention_scores.copy().cpu().detach().numpy())
+                    weighted_attention_scores.cpu().detach().numpy())
 
         context_vectors = torch.stack(context_vectors).transpose(0, 1)
 
@@ -133,7 +133,7 @@ class PositionalAttention(nn.Module):
 
             if return_attention:
                 attention_vectors.append(
-                    gaussian_weighted_attention.copy().cpu().detach().numpy())
+                    gaussian_weighted_attention.cpu().detach().numpy())
 
         context_vectors = torch.stack(position_vectors).transpose(0, 1)
 
