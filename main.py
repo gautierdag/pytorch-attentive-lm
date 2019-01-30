@@ -30,8 +30,8 @@ def main(args):
                         help='input batch size for training (default: 64)')
     parser.add_argument('--epochs', type=int, default=40, metavar='N',
                         help='number of epochs to train (default: 40)')
-    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
-                        help='learning rate (default: 0.01)')
+    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+                        help='learning rate (default: 0.001)')
     parser.add_argument('--patience', type=int, default=5, metavar='P',
                         help='patience for lr decrease (default: 5)')
     parser.add_argument('--seed', type=int, default=123, metavar='S',
@@ -45,12 +45,12 @@ def main(args):
                         choices=['wiki-02', 'ptb'],
                         help='Select which dataset (default: %(default)s)')
 
-    parser.add_argument('--embedding-size', type=int, default=65, metavar='N',
-                        help='embedding size for embedding layer (default: 65)')
+    parser.add_argument('--embedding-size', type=int, default=20, metavar='N',
+                        help='embedding size for embedding layer (default: 20)')
     parser.add_argument('--n-layers', type=int, default=1, metavar='N',
                         help='layer size for RNN encoder (default: 1)')
-    parser.add_argument('--hidden-size', type=int, default=65, metavar='N',
-                        help='hidden size for RNN encoder (default: 65)')
+    parser.add_argument('--hidden-size', type=int, default=20, metavar='N',
+                        help='hidden size for RNN encoder (default: 20)')
     parser.add_argument('--input-dropout', type=float, default=0.5, metavar='D',
                         help='input dropout (default: 0.5)')
     parser.add_argument('--rnn-dropout', type=float, default=0.0, metavar='D',
@@ -69,7 +69,7 @@ def main(args):
 
     parser.add_argument('--salton-lr-schedule',
                         help='Enables same training schedule as Salton et al. 2017 (default: False)',
-                        action='store_false')
+                        action='store_true')
 
     parser.add_argument('--early-stopping-patience', type=int, default=25, metavar='P',
                         help='early stopping patience (default: 25)')
@@ -89,7 +89,6 @@ def main(args):
                         help='Specific filename to save under (default: uses params to generate', default=False)
 
     args = parser.parse_args(args)
-    print(args)
 
     if not args.file_name:
         run_name = generate_filename(args)
@@ -129,10 +128,11 @@ def main(args):
                               lr=args.lr, weight_decay=12e-7)
     if args.optim == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr,
-                               betas=(0.0, 0.999), eps=1e-4,
+                               betas=(0.0, 0.999), eps=1e-8,
                                weight_decay=12e-7, amsgrad=True)
 
     criterion = nn.CrossEntropyLoss()
+
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', patience=args.patience,
         verbose=True, factor=0.5)

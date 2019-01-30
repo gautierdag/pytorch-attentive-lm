@@ -240,6 +240,10 @@ class AttentiveRNNLanguageModel(nn.Module):
         Flatten parameters of all reccurrent components in the model.
         """
         self.encoder.flatten_parameters()
+        if self.attention:
+            self.attention_score_module.flatten_parameters()
+        if self.positional_attention:
+            self.position_score_module.flatten_parameters()
 
     def init_weights(self, init_range=0.1):
         """

@@ -15,8 +15,7 @@ def evaluate(args, model, data_iterator, criterion,
 
     hidden = model.init_hidden(args.batch_size)
     with torch.no_grad():
-        for _, batch in tqdm(enumerate(data_iterator),
-                             total=len(data_iterator), disable=True):
+        for _, batch in enumerate(data_iterator):
             data, targets = batch.text.t(), batch.target.t().contiguous()
             output, hidden = model(data, hidden)
             output_flat = output.view(-1, model.vocab_size)
@@ -42,7 +41,7 @@ def train(args, model, train_iter, valid_iter,
     iteration_step = len(train_iter) * (epoch - 1)
 
     hidden = model.init_hidden(args.batch_size)
-    for i, batch in tqdm(enumerate(train_iter), total=len(train_iter), disable=True):
+    for i, batch in enumerate(train_iter):
             # transpose text to make batch first
         iteration_step += 1
         data, targets = batch.text.t(), batch.target.t().contiguous()
