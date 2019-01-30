@@ -154,7 +154,8 @@ def main(args):
                   criterion, optimizer,
                   epoch, writer)
 
-            val_loss = evaluate(args, model, valid_iter, criterion)
+            val_loss = evaluate(args, model, valid_iter,
+                                criterion, save_attention=True)
             test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate

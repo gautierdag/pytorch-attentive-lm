@@ -16,15 +16,30 @@ from main import main
 # main(params_merity)
 
 
-# params_attentive_lm = ["--embedding-size", '250', '--hidden-size', '250', '--n-layers', '2',
-#                        '--batch-size', '32', '--epochs', '500', '--seed', '123',
-#                        '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '30',
-#                        '--tie-weights', '--file-name', 'test']
-# main(params_attentive_lm)
-
-
-positional_lm = ["--embedding-size", '250', '--hidden-size', '250', '--n-layers', '2',
+positional_lm = ["--embedding-size", '400', '--hidden-size', '400', '--n-layers', '2',
                  '--batch-size', '32', '--epochs', '500', '--seed', '123',
                  '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '0.1',
-                 '--tie-weights', '--file-name', 'positional_test']
+                 '--tie-weights', '--file-name', 'positional_test_adam',
+                 '--patience', '5', '--optim', 'adam']
 main(positional_lm)
+positional_lm = ["--embedding-size", '400', '--hidden-size', '400', '--n-layers', '2',
+                 '--batch-size', '32', '--epochs', '500', '--seed', '123',
+                 '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '0.1',
+                 '--tie-weights', '--file-name', 'positional_test_wiki02_adam',
+                 '--patience', '5', '--optim', 'adam', '--dataset', 'wiki-02']
+main(positional_lm)
+
+
+attention_lm = ["--embedding-size", '400', '--hidden-size', '400', '--n-layers', '2',
+                '--batch-size', '32', '--epochs', '500', '--seed', '123',
+                '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '0.1',
+                '--tie-weights', '--file-name', 'attention_test_adam', '--patience', '5', '--optim',
+                'adam', '--attention', '--no-positional-attention']
+main(attention_lm)
+
+attention_lm = ["--embedding-size", '400', '--hidden-size', '400', '--n-layers', '2',
+                '--batch-size', '32', '--epochs', '500', '--seed', '123',
+                '--log-interval', '200', '--early-stopping-patience', '10', '--lr', '0.1',
+                '--tie-weights', '--file-name', 'attention_test_wiki02_adam', '--patience', '5', '--optim',
+                'adam', '--attention', '--no-positional-attention', '--dataset', 'wiki-02']
+main(attention_lm)
