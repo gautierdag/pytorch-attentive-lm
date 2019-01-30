@@ -49,10 +49,10 @@ def save_attention_visualization(args, data_iter, batch, model, epoch):
 
     output_flat = output.view(-1, model.vocab_size)
 
-    plot_attention(vocab, data, targets, attention_weights, epoch)
+    plot_attention(args, vocab, data, targets, attention_weights, epoch)
 
 
-def plot_attention(vocab, data, targets, attention_weights, epoch):
+def plot_attention(args, vocab, data, targets, attention_weights, epoch):
     batch_size = data.shape[0]
     seq_length = data.shape[1]
 
@@ -80,6 +80,11 @@ def plot_attention(vocab, data, targets, attention_weights, epoch):
     ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
 
+    if args.attention:
+        att = 'attention'
+    if args.no_positional_attention:
+        att = 'positional_attention'
+
     timestr = time.strftime("fig_generated_at_%H%M%S_for_epoch_")
-    plt.savefig('runs/'+timestr+str(epoch))
+    plt.savefig('runs/'+att+timestr+str(epoch))
     plt.close()
