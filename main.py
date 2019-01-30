@@ -89,6 +89,7 @@ def main(args):
                         help='Specific filename to save under (default: uses params to generate', default=False)
 
     args = parser.parse_args(args)
+    print(args)
 
     if not args.file_name:
         run_name = generate_filename(args)
@@ -128,7 +129,7 @@ def main(args):
                               lr=args.lr, weight_decay=12e-7)
     if args.optim == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr,
-                               betas=(0.0, 0.999), eps=1e-8,
+                               betas=(0.0, 0.999), eps=1e-4,
                                weight_decay=12e-7, amsgrad=True)
 
     criterion = nn.CrossEntropyLoss()
