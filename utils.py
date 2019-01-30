@@ -64,7 +64,7 @@ def convert_sentence_to_tensors(vocab, sentence):
     for w in sentence:
         encoded.append(vocab.stoi[w])
 
-    encoded = torch.tensor(encoded, dtype=torch.int, device=device)
+    encoded = torch.tensor(encoded, dtype=torch.long, device=device)
 
     model_input = encoded[:-1]
     target = encoded[1:]
