@@ -24,7 +24,7 @@ def evaluate(args, model, data_iterator, criterion,
                                                 targets.view(-1)).item()
             example_count += len(data)
             hidden = repackage_hidden(hidden)
-    if (save_attention):
+    if save_attention and (args.attention or args.no_positional_attention):
         save_attention_visualization(args, data_iterator, batch, model, epoch)
     model.train()
     return total_loss / example_count

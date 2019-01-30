@@ -90,6 +90,11 @@ def main(args):
 
     args = parser.parse_args(args)
 
+    # Basic
+    args.optim = 'adam'
+    args.lr = 0.0001
+    # args.no_positional_attention = False
+
     if not args.file_name:
         run_name = generate_filename(args)
     else:
@@ -128,8 +133,8 @@ def main(args):
                               lr=args.lr, weight_decay=12e-7)
     if args.optim == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr,
-                               betas=(0.0, 0.999), eps=1e-8,
-                               weight_decay=12e-7)
+                               betas=(0.0, 0.999), eps=1e-2,
+                               weight_decay=12e-7, amsgrad=True)
 
     criterion = nn.CrossEntropyLoss()
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(

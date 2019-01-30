@@ -67,6 +67,12 @@ class PositionalAttention(nn.Module):
         self.mu_generator = nn.Linear(
             positioning_embedding, num_building_blocks)
 
+    def flatten_parameters(self):
+        """
+        Flatten parameters of all reccurrent components in the model.
+        """
+        self.positioning_generator.flatten_parameters()
+
     @staticmethod
     def normal_pdf(x, mu, sigma):
         """Return normalized Gaussian_pdf(x)."""
