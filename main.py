@@ -17,7 +17,7 @@ from tensorboardX import SummaryWriter
 
 from model import AttentiveRNNLanguageModel
 from train import evaluate, train
-from utils import generate_filename, visualize
+from utils import generate_filename, save_attention_visualization
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

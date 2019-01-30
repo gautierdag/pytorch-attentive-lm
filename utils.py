@@ -26,5 +26,14 @@ def repackage_hidden(h):
         return tuple(repackage_hidden(v) for v in h)
 
 
-def visualize(data_iter):
+def save_attention_visualization(args, data_iter, batch, model):
+
+    vocab = data_iter.dataset.fields['text'].vocab
+
+    hidden = model.init_hidden(args.batch_size)
+    with torch.no_grad():
+        data, targets = batch.text.t(), batch.target.t().contiguous()
+        output, hidden = model(data, hidden)
+        output_flat = output.view(-1, model.vocab_size)
+
     print(len(data_iter))
