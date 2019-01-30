@@ -90,6 +90,11 @@ def main(args):
 
     args = parser.parse_args(args)
 
+    # TEST
+    args.attention = True
+    args.no_positional_attention = False
+    args.log_interval = 100
+
     if not args.file_name:
         run_name = generate_filename(args)
     else:
