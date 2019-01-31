@@ -123,7 +123,7 @@ def main(args):
                                betas=(0.0, 0.999), eps=1e-8,
                                weight_decay=12e-7, amsgrad=True)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=0)
 
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', patience=args.patience,
