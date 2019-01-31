@@ -11,7 +11,7 @@ def evaluate(args, model, data_iterator, criterion,
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0.
-    example_count = 0
+    word_count = 0
 
     hidden = model.init_hidden(args.batch_size)
     with torch.no_grad():
@@ -19,14 +19,18 @@ def evaluate(args, model, data_iterator, criterion,
             data, targets = batch[0], batch[1]
             output, hidden = model(data, hidden)
             output_flat = output.view(-1, model.vocab_size)
-            total_loss += len(data) * criterion(output_flat,
-                                                targets.view(-1)).item()
-            example_count += len(data)
+            total_loss += criterion(output_flat,
+                                    targets.view(-1)).item()
+
+            # word based perplexity needs count of actual word
+            # - all but padding
+            word_count += len(data.nonzero())
+
             hidden = repackage_hidden(hidden)
     if save_attention and (args.attention or args.no_positional_attention):
         save_attention_visualization(args, model, vocabulary, epoch)
     model.train()
-    return total_loss / example_count
+    return total_loss / word_count
 
 
 def train(args, model, train_iter, valid_iter,
@@ -62,8 +66,9 @@ def train(args, model, train_iter, valid_iter,
         # of the dataset.
         hidden = repackage_hidden(hidden)
 
-        total_loss += len(data) * loss.item()
-        total_num_examples += len(data)
+        total_loss += loss.item()
+        # word based perplexity needs count of actual word - all but padding
+        total_num_examples += len(data.nonzero())
 
         if iteration_step % args.log_interval == 0 and i > 0:
             cur_loss = total_loss / total_num_examples
