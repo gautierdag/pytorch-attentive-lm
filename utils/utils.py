@@ -50,7 +50,7 @@ def convert_tensor_to_sentence(vocab, tensor):
     for t in tensor:
         sentence += vocab.itos[t]
         sentence += ' '
-    print(sentence)
+    # print(sentence)
 
 
 def convert_sentence_to_tensors(vocab, sentence):
@@ -69,37 +69,31 @@ def convert_sentence_to_tensors(vocab, sentence):
     model_input = encoded[:-1]
     target = encoded[1:]
 
-    convert_tensor_to_sentence(vocab, model_input)
-    convert_tensor_to_sentence(vocab, target)
+    # convert_tensor_to_sentence(vocab, model_input)
+    # convert_tensor_to_sentence(vocab, target)
 
     return model_input.unsqueeze(0), target.unsqueeze(0)
 
 
-def save_attention_visualization(args, data_iter, batch, model, epoch):
-
-    vocab = data_iter.dataset.fields['text'].vocab
-
-    hidden = model.init_hidden(args.batch_size)
-
-    data, targets = batch.text.t(), batch.target.t().contiguous()
-    _, _, attention_weights = model(
-        data, hidden, return_attention=True)
-    plot_attention(args, vocab, data, targets, attention_weights, epoch)
+def save_attention_visualization(args, model, vocabulary, epoch):
 
     # Test on standard sentences
     sentence1 = "I saw the woman who I think he likes in japan last year."
     sentence2 = "In japan last year I saw the woman who I think he likes."
-    sentences = [sentence1, sentence2]
+    sentence3 = "the man bought the horse which i saw."
+    sentences = [sentence1, sentence2, sentence3]
+    hidden = model.init_hidden(1)
     for s in range(len(sentences)):
-        input_sentence, target_sentence = convert_sentence_to_tensors(vocab,
+        input_sentence, target_sentence = convert_sentence_to_tensors(vocabulary,
                                                                       sentences[s])
         _, _, attention_weights = model(
             input_sentence, hidden, return_attention=True)
-        plot_attention(args, vocab, input_sentence,
-                       target_sentence, attention_weights, epoch, count=s+1)
+        plot_attention(args, vocabulary, input_sentence,
+                       target_sentence, attention_weights, epoch, count=s)
 
 
-def plot_attention(args, vocab, data, targets, attention_weights, epoch, count=0):
+def plot_attention(args, vocab, data, targets,
+                   attention_weights, epoch, count=0):
     batch_size = data.shape[0]
     seq_length = data.shape[1]
 
@@ -125,9 +119,7 @@ def plot_attention(args, vocab, data, targets, attention_weights, epoch, count=0
     ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
 
-    att = generate_filename(args)
-    if count > 0:
-        att += '_{}_'.format(count)
+    att = args.file_name + '/sentence_{}_at_epoch_{}'.format(count, epoch)
 
-    plt.savefig('runs/'+att+"_epoch_"+str(epoch))
+    plt.savefig('runs/'+att)
     plt.close()

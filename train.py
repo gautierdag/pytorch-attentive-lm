@@ -7,7 +7,7 @@ from utils import repackage_hidden, save_attention_visualization
 
 
 def evaluate(args, model, data_iterator, criterion,
-             save_attention=False, epoch=0):
+             save_attention=False, epoch=0, vocabulary=None):
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0.
@@ -24,7 +24,7 @@ def evaluate(args, model, data_iterator, criterion,
             example_count += len(data)
             hidden = repackage_hidden(hidden)
     if save_attention and (args.attention or args.no_positional_attention):
-        save_attention_visualization(args, data_iterator, batch, model, epoch)
+        save_attention_visualization(args, model, vocabulary, epoch)
     model.train()
     return total_loss / example_count
 

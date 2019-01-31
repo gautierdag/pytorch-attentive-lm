@@ -86,13 +86,11 @@ def main(args):
     args = parser.parse_args(args)
 
     if not args.file_name:
-        run_name = generate_filename(args)
-    else:
-        run_name = args.file_name
+        args.file_name = generate_filename(args)
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    writer = SummaryWriter('runs/' + run_name)
+    writer = SummaryWriter('runs/' + args.file_name)
 
     train_iter, valid_iter, test_iter, vocab = get_dataset(dataset=args.dataset,
                                                            batch_size=args.batch_size,
@@ -148,7 +146,8 @@ def main(args):
                   epoch, writer)
 
             val_loss = evaluate(args, model, valid_iter,
-                                criterion, save_attention=False, epoch=epoch)
+                                criterion, save_attention=True, epoch=epoch,
+                                vocabulary=vocab)
             test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
@@ -177,7 +176,7 @@ def main(args):
                 if not os.path.exists('models'):
                     os.makedirs('models')
 
-                with open('models/{}.pt'.format(run_name), 'wb') as f:
+                with open('models/{}.pt'.format(args.file_name), 'wb') as f:
                     torch.save(model, f)
                 best_val_loss = val_loss
                 early_stopping_counter = 0
@@ -196,9 +195,9 @@ def main(args):
         print('-' * 89)
         print('Exiting from training early')
 
-    if os.path.exists('models/{}.pt'.format(run_name)):
+    if os.path.exists('models/{}.pt'.format(args.file_name)):
         # Load the best saved model.
-        with open('models/{}.pt'.format(run_name), 'rb') as f:
+        with open('models/{}.pt'.format(args.file_name), 'rb') as f:
             model = torch.load(f)
             # after load the rnn params are not a continuous chunk of memory
             # this makes them a continuous chunk, and will speed up forward pass

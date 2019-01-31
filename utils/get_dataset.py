@@ -1,17 +1,21 @@
+import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset
+import urllib.request
 
 from .data_reader import read_vocabulary, read_lm_data, lm_data_producer
+from .pre_process_wikitext import pre_process
 
 
 def get_dataset(dataset, batch_size, device):
     """
     Returns data iterator for each set and vocabulary
     """
+    download_dataset(dataset)  # downloads and preprocess dataset if needed
     if dataset == "wiki-02":
-        data_files = [".data/wikitext-2/wiki.train.tokens.sent",
-                      ".data/wikitext-2/wiki.valid.tokens.sent",
-                      ".data/wikitext-2/wiki.test.tokens.sent"]
+        data_files = [".data/wikitext-2/wikitext-2/wiki.train.tokens.sent",
+                      ".data/wikitext-2/wikitext-2/wiki.valid.tokens.sent",
+                      ".data/wikitext-2/wikitext-2/wiki.test.tokens.sent"]
         vocab_size = 33278 + 1  # add 1 to account for PAD
     if dataset == 'ptb':
         data_files = [".data/penn-treebank/ptb.train.txt",
@@ -47,4 +51,51 @@ def get_dataset(dataset, batch_size, device):
     return train_iter, valid_iter, test_iter, vocabulary
 
 
-#
+# downloading/preprocessing functions
+def download_dataset(dataset):
+    if not os.path.exists('.data'):
+        os.makedirs('.data')
+    if dataset == 'ptb':
+        folder_name = 'penn-treebank'
+        filename = 'ptb.test.txt'
+    if dataset == 'wiki-02':
+        folder_name = 'wikitext-02'
+        filename = 'wiki.test.tokens'
+    dataset_path = '.data/' + folder_name
+    if not os.path.exists(dataset_path):
+        os.makedirs(dataset_path)
+    filepath = dataset_path + '/' + filename
+    if not os.path.exists(filepath):
+        if dataset == 'ptb':
+            download_ptb(dataset_path)
+        if dataset == 'wikitext-2':
+            download_and_preproc_wiki(dataset_path)
+    return
+
+
+def download_ptb(dataset_path):
+    urls = ['https://raw.githubusercontent.com/wojzaremba/lstm/master/data/ptb.train.txt',
+            'https://raw.githubusercontent.com/wojzaremba/lstm/master/data/ptb.valid.txt',
+            'https://raw.githubusercontent.com/wojzaremba/lstm/master/data/ptb.test.txt']
+
+    urllib.request.retrieve(urls[0], dataset_path+"/ptb.train.txt")
+    urllib.request.retrieve(urls[1], dataset_path+"/ptb.valid.txt")
+    urllib.request.retrieve(urls[2], dataset_path+"/ptb.test.txt")
+
+
+def download_and_preproc_wiki(dataset_path):
+    url = 'https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-2-v1.zip'
+    raise NotImplementedError
+
+    train = ".data/wikitext-2/wikitext-2/wiki.train.tokens"
+    valid = ".data/wikitext-2/wikitext-2/wiki.valid.tokens"
+    test = ".data/wikitext-2/wikitext-2/wiki.test.tokens"
+
+    print("Pre-processing wikitext-02 training set...")
+    pre_process(train)
+
+    print("Pre-processing wikitext-02 validation set...")
+    pre_process(valid)
+
+    print("Pre-processing wikitext-02 test set...")
+    pre_process(test)
