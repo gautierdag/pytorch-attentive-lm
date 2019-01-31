@@ -23,6 +23,17 @@ START_VOCAB = [_PAD, _EOS, _UNK]
 _DIGIT_RE = re.compile(r'\d')
 
 
+class Vocabulary():
+    def __init__(self, stoi, itos):
+        # stoi is string to index dictionary
+        # itos is index to string list
+        self.stoi = stoi
+        self.itos = itos
+
+    def __len__(self):
+        return len(self.itos)
+
+
 def _read_words(filename, ptb=True):
     """ helper to read the file and split into sentences. """
 
@@ -64,13 +75,15 @@ def read_vocabulary(data_filenames, vocab_size):
 
     word_dict = dict(zip(words, range(len(words))))
 
-    return word_dict
+    vocab = Vocabulary(word_dict, words)
+
+    return vocab
 
 
 def sentence_to_token_ids(sentence,
                           vocabulary):
     """ Convert a string to list of integers representing token-ids. """
-    return [vocabulary.get(w, UNK_ID) for w in sentence]
+    return [vocabulary.stoi.get(w, UNK_ID) for w in sentence]
 
 
 def _data_to_token_ids(data_path,
@@ -124,20 +137,6 @@ def lm_data_producer(raw_data,
                 for sentence in raw_data]
 
     data = np.array(raw_data, dtype=dtype)
-
-    # raw_data = np.array(raw_data, dtype=dtype)
-    # data_len = len(raw_data)
-    # epoch_size = int(math.ceil(data_len / batch_size))
-    # data = np.zeros_like(raw_data, dtype=dtype)
-
-    # for i in range(epoch_size):
-    #     dt = raw_data[batch_size * i:batch_size * (i + 1)]
-    #     data[batch_size * i:batch_size * (i + 1)] = dt
-    #     # Append empty to make data fit into even batches
-    #     if len(dt) < batch_size:
-    #         shape = (batch_size - len(dt)), num_steps + 1
-    #         padding = np.ones(shape) * PAD_ID
-    #         data = np.concatenate([data, padding])
 
     xtrain = data[:, 0:num_steps].astype(dtype)
     ytrain = data[:, 1:num_steps + 1].astype(dtype)
