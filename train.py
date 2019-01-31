@@ -1,7 +1,7 @@
 import math
 import torch
 import time
-from tqdm import tqdm
+
 
 from utils import repackage_hidden, save_attention_visualization
 
@@ -16,7 +16,7 @@ def evaluate(args, model, data_iterator, criterion,
     hidden = model.init_hidden(args.batch_size)
     with torch.no_grad():
         for _, batch in enumerate(data_iterator):
-            data, targets = batch.text.t(), batch.target.t().contiguous()
+            data, targets = batch[0], batch[1]
             output, hidden = model(data, hidden)
             output_flat = output.view(-1, model.vocab_size)
             total_loss += len(data) * criterion(output_flat,
@@ -44,7 +44,7 @@ def train(args, model, train_iter, valid_iter,
     for i, batch in enumerate(train_iter):
             # transpose text to make batch first
         iteration_step += 1
-        data, targets = batch.text.t(), batch.target.t().contiguous()
+        data, targets = batch[0], batch[1]
 
         model.zero_grad()
         output, hidden = model(data, hidden)

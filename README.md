@@ -18,7 +18,7 @@ Dependencies:
   - `python=3.7`
   - `torch>=1.0.0`
   - `torchtext=0.3.1`
-  - `tqdm`
+  - `nltk`
 
 Install all depedencies and run `python main.py`.
 

@@ -4,20 +4,15 @@ import time
 import math
 import sys
 
-from tqdm import tqdm
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-import torchtext
-from torchtext.datasets import WikiText2, PennTreebank
 
 from tensorboardX import SummaryWriter
 
 from model import AttentiveRNNLanguageModel
 from train import evaluate, train
-from utils import generate_filename, save_attention_visualization
+from utils import generate_filename, save_attention_visualization, get_dataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -99,14 +94,11 @@ def main(args):
     torch.cuda.manual_seed_all(args.seed)
     writer = SummaryWriter('runs/' + run_name)
 
-    if args.dataset == 'wiki-02':
-        train_iter, valid_iter, test_iter = WikiText2.iters(
-            batch_size=args.batch_size, device=device)
-    if args.dataset == 'ptb':
-        train_iter, valid_iter, test_iter = PennTreebank.iters(
-            batch_size=args.batch_size, device=device)
+    train_iter, valid_iter, test_iter, vocab = get_dataset(dataset=args.dataset,
+                                                           batch_size=args.batch_size,
+                                                           device=device)
 
-    vocab_size = len(train_iter.dataset.fields['text'].vocab)
+    vocab_size = len(vocab)
 
     model = AttentiveRNNLanguageModel(vocab_size,
                                       embedding_size=args.embedding_size,
@@ -156,7 +148,7 @@ def main(args):
                   epoch, writer)
 
             val_loss = evaluate(args, model, valid_iter,
-                                criterion, save_attention=True, epoch=epoch)
+                                criterion, save_attention=False, epoch=epoch)
             test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
