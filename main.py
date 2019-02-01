@@ -61,7 +61,7 @@ def main(args):
                         default='sgd',
                         const='sgd',
                         nargs='?',
-                        choices=['sgd', 'adam'],
+                        choices=['sgd', 'adam', 'asgd'],
                         help='Select which optimizer (default: %(default)s)')
 
     parser.add_argument('--salton-lr-schedule',
@@ -79,8 +79,6 @@ def main(args):
 
     parser.add_argument(
         '--tie-weights', help='Tie embedding and decoder weights (default: False', action='store_true')
-    parser.add_argument(
-        '--use-hidden', help='Propagate hidden states over minibatches (default: False', action='store_true')
 
     parser.add_argument('--file-name', action="store",
                         help='Specific filename to save under (default: uses params to generate', default=False)
@@ -110,8 +108,7 @@ def main(args):
                                       dropout_p_decoder=args.decoder_dropout,
                                       dropout_p_encoder=args.rnn_dropout,
                                       dropout_p_input=args.input_dropout,
-                                      tie_weights=args.tie_weights,
-                                      use_hidden=args.use_hidden)
+                                      tie_weights=args.tie_weights)
 
     model.to(device)
 
@@ -119,6 +116,9 @@ def main(args):
     if args.optim == 'sgd':
         optimizer = optim.SGD(model.parameters(),
                               lr=args.lr, weight_decay=12e-7)
+    if args.optim == 'asgd':
+        optimizer = optim.ASGD(model.parameters(),
+                               lr=args.lr, weight_decay=12e-7)
     if args.optim == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr,
                                betas=(0.0, 0.999), eps=1e-8,

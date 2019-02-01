@@ -76,7 +76,6 @@ class PositionalAttention(nn.Module):
     def normal_pdf(x, mu, sigma):
         """Return normalized Gaussian_pdf(x)."""
         x = torch.exp(-(x - mu)**2 / (2 * sigma**2))
-        x = F.normalize(x, p=1)
         return x
 
     def forward(self, x, return_attention=False):
@@ -108,7 +107,6 @@ class PositionalAttention(nn.Module):
         for j in range(sequence_length):
             # For each timestep the context that is attented grows
             # as there are more available previous hidden states
-
             bb = building_blocks[j].clone()
             bb[:, 0] = prev_mu
 
@@ -124,7 +122,9 @@ class PositionalAttention(nn.Module):
             gaussian_weighted_attention = self.normal_pdf(
                 rel_counter.expand(batch_size, -1), mu, sigma).unsqueeze(2)
 
-            # multiply the weights with the hiddene encoded states found till this point
+            gaussian_weighted_attention = F.normalize(
+                gaussian_weighted_attention[:, :j+1, :].clone(), p=1)
+            # multiply the weights with the hidden encoded states found till this point
             applied_positional_attention = x[:, :j+1,
                                              :].clone() * gaussian_weighted_attention
             position_vectors.append(
@@ -154,8 +154,7 @@ class AttentiveRNNLanguageModel(nn.Module):
                  attention=False,
                  positional_attention=True,
                  positioning_embedding=20,
-                 tie_weights=True,
-                 use_hidden=False):
+                 tie_weights=True):
 
         super(AttentiveRNNLanguageModel, self).__init__()
 
@@ -165,7 +164,6 @@ class AttentiveRNNLanguageModel(nn.Module):
         self.vocab_size = vocab_size
         self.attention = attention
         self.positional_attention = positional_attention
-        self.use_hidden = use_hidden
 
         self.input_dropout = nn.Dropout(dropout_p_input)
         self.embedding = nn.Embedding(vocab_size, embedding_size)
@@ -203,15 +201,12 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         self.init_weights()
 
-    def forward(self, input, hidden, return_attention=False):
+    def forward(self, input, return_attention=False):
 
         embedded = self.embedding(input)
         embedded = self.input_dropout(embedded)
 
-        if self.use_hidden:
-            encoder_output, hidden = self.encoder(embedded, hidden)
-        else:
-            encoder_output, hidden = self.encoder(embedded)
+        encoder_output, _ = self.encoder(embedded)
 
         if self.attention:
             context_vectors, attention_score = self.attention_score_module(
@@ -232,9 +227,9 @@ class AttentiveRNNLanguageModel(nn.Module):
         decoded = self.decoder(output.contiguous())
 
         if return_attention:
-            return decoded, hidden, attention_score
+            return decoded, attention_score
 
-        return decoded, hidden
+        return decoded
 
     def flatten_parameters(self):
         """
@@ -252,9 +247,3 @@ class AttentiveRNNLanguageModel(nn.Module):
             -init_range, init_range)
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-init_range, init_range)
-
-    def init_hidden(self, batch_size):
-        # initialize hidden state for RNN layer
-        weight = next(self.parameters())
-        return (weight.new_zeros(self.n_layers, batch_size, self.hidden_size),
-                weight.new_zeros(self.n_layers, batch_size, self.hidden_size))

@@ -2,8 +2,7 @@ import math
 import torch
 import time
 
-
-from utils import repackage_hidden, save_attention_visualization
+from utils import save_attention_visualization
 
 
 def evaluate(args, model, data_iterator, criterion,
@@ -13,11 +12,10 @@ def evaluate(args, model, data_iterator, criterion,
     total_loss = 0.
     word_count = 0
 
-    hidden = model.init_hidden(args.batch_size)
     with torch.no_grad():
         for _, batch in enumerate(data_iterator):
             data, targets = batch[0], batch[1]
-            output, hidden = model(data, hidden)
+            output = model(data)
             output_flat = output.view(-1, model.vocab_size)
             total_loss += criterion(output_flat,
                                     targets.view(-1)).item()
@@ -26,7 +24,6 @@ def evaluate(args, model, data_iterator, criterion,
             # - all but padding
             word_count += len(data.nonzero())
 
-            hidden = repackage_hidden(hidden)
     if save_attention and (args.attention or args.no_positional_attention):
         save_attention_visualization(args, model, vocabulary, epoch)
     model.train()
@@ -44,14 +41,13 @@ def train(args, model, train_iter, valid_iter,
     start_time = time.time()
     iteration_step = len(train_iter) * (epoch - 1)
 
-    hidden = model.init_hidden(args.batch_size)
     for i, batch in enumerate(train_iter):
             # transpose text to make batch first
         iteration_step += 1
         data, targets = batch[0], batch[1]
 
         model.zero_grad()
-        output, hidden = model(data, hidden)
+        output = model(data)
         loss = criterion(output.view(-1, model.vocab_size), targets.view(-1))
         loss.backward()
 
@@ -60,11 +56,6 @@ def train(args, model, train_iter, valid_iter,
         # However they have be shown to behave better in steep cliffs loss surfaces
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
         optimizer.step()
-
-        # We detach the hidden state from how it was previously produced.
-        # If we didn't, the model would try backpropagating all the way to start
-        # of the dataset.
-        hidden = repackage_hidden(hidden)
 
         total_loss += loss.item()
         # word based perplexity needs count of actual word - all but padding

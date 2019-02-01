@@ -30,17 +30,6 @@ def generate_filename(args):
     return n
 
 
-def repackage_hidden(h):
-    """
-    Wraps hidden states in new Tensors,
-    to detach them from their history.
-    """
-    if isinstance(h, torch.Tensor):
-        return h.detach()
-    else:
-        return tuple(repackage_hidden(v) for v in h)
-
-
 def convert_tensor_to_sentence(vocab, tensor):
     """
     converts a 1d tensor back to a sentence
@@ -62,7 +51,7 @@ def convert_sentence_to_tensors(vocab, sentence):
     sentence = sentence.lower().replace('.', ' <eos>').split(' ')
     encoded = []
     for w in sentence:
-        i  = vocab.stoi.get(w)
+        i = vocab.stoi.get(w)
         if i is None:
             i = vocab.stoi.get('<unk>')
         encoded.append(i)
@@ -85,12 +74,11 @@ def save_attention_visualization(args, model, vocabulary, epoch):
     sentence2 = "In japan last year I saw the woman who I think he likes."
     sentence3 = "the man bought the horse which i saw."
     sentences = [sentence1, sentence2, sentence3]
-    hidden = model.init_hidden(1)
     for s in range(len(sentences)):
         input_sentence, target_sentence = convert_sentence_to_tensors(vocabulary,
                                                                       sentences[s])
-        _, _, attention_weights = model(
-            input_sentence, hidden, return_attention=True)
+        _, attention_weights = model(
+            input_sentence, return_attention=True)
         plot_attention(args, vocabulary, input_sentence,
                        target_sentence, attention_weights, epoch, count=s)
 
