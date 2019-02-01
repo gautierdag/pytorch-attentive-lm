@@ -75,7 +75,7 @@ class PositionalAttention(nn.Module):
     @staticmethod
     def normal_pdf(x, mu, sigma):
         """Return normalized Gaussian_pdf(x)."""
-        x = torch.exp(-(x - mu)**2 / (2 * sigma**2))
+        x = torch.exp(-(x - mu)**2 / (2 * sigma**2 +10e-4))
         return x
 
     def forward(self, x, pad_lengths, return_attention=False):
