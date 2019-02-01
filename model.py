@@ -78,7 +78,7 @@ class PositionalAttention(nn.Module):
         x = torch.exp(-(x - mu)**2 / (2 * sigma**2))
         return x
 
-    def forward(self, x, return_attention=False):
+    def forward(self, x, pad_lengths, return_attention=False):
         """
         Input x is encoder output
         return_attention decides whether to return
@@ -88,6 +88,10 @@ class PositionalAttention(nn.Module):
         batch_size = x.shape[0]
         sequence_length = x.shape[1]
 
+        # Need the lengths to normalize each sentence to respective length
+        # for the building blocks - 1/N and j/N
+        lengths = pad_lengths.expand(35, 64).type(torch.float)
+
         positioning_weights, _ = self.positioning_generator(x)
         mu_weights = F.relu(self.mu_generator(positioning_weights))
         sigma_weights = torch.sigmoid(
@@ -96,14 +100,16 @@ class PositionalAttention(nn.Module):
         prev_mu = torch.zeros(batch_size, device=device)
         building_blocks = torch.ones(
             (sequence_length, batch_size, self.num_building_blocks), device=device)
-        building_blocks[:, :, 1] = 1/sequence_length
-        building_blocks[:, :, 2] = ((torch.arange(
-            sequence_length, dtype=torch.float, device=device)+1).unsqueeze(1).expand(-1, batch_size) / sequence_length)
+        building_blocks[:, :, 1] = 1/lengths
+        building_blocks[:, :, 2] = (torch.arange(
+            sequence_length, dtype=torch.float, device=device)+1).unsqueeze(1).expand(-1, batch_size) / lengths
 
         # Attend for each time step using the previous context
         position_vectors = []  # Which positions to attend to
         attention_vectors = []
 
+        # we go over the whole sequence - even though it is padded so the max
+        # length might be shorter.
         for j in range(sequence_length):
             # For each timestep the context that is attented grows
             # as there are more available previous hidden states
@@ -116,6 +122,7 @@ class PositionalAttention(nn.Module):
 
             sigma = sigma_weights[:, j, :]
 
+            # relative counter that represents 0-1 where to attend on sequence up till now
             rel_counter = torch.arange(
                 j+1, dtype=torch.float, device=device).unsqueeze(0) / (j+1)
 
@@ -201,7 +208,7 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         self.init_weights()
 
-    def forward(self, input, return_attention=False):
+    def forward(self, input, pad_lengths, return_attention=False):
 
         embedded = self.embedding(input)
         embedded = self.input_dropout(embedded)
@@ -214,7 +221,7 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         if self.positional_attention:
             context_vectors, attention_score = self.position_score_module(
-                encoder_output, return_attention=return_attention)
+                encoder_output, pad_lengths, return_attention=return_attention)
 
         if self.attention or self.positional_attention:
             combined_encoding = torch.cat(

@@ -14,8 +14,8 @@ def evaluate(args, model, data_iterator, criterion,
 
     with torch.no_grad():
         for _, batch in enumerate(data_iterator):
-            data, targets = batch[0], batch[1]
-            output = model(data)
+            data, targets, pad_lengths = batch[0], batch[1], batch[2]
+            output = model(data, pad_lengths)
             output_flat = output.view(-1, model.vocab_size)
             total_loss += criterion(output_flat,
                                     targets.view(-1)).item()
@@ -44,10 +44,10 @@ def train(args, model, train_iter, valid_iter,
     for i, batch in enumerate(train_iter):
             # transpose text to make batch first
         iteration_step += 1
-        data, targets = batch[0], batch[1]
+        data, targets, pad_lengths = batch[0], batch[1], batch[2]
 
         model.zero_grad()
-        output = model(data)
+        output = model(data, pad_lengths)
         loss = criterion(output.view(-1, model.vocab_size), targets.view(-1))
         loss.backward()
 

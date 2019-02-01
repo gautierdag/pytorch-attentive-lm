@@ -131,14 +131,21 @@ def lm_data_producer(raw_data,
                      dtype=np.long):
     """ Iterate on the given raw data producing samples. """
 
+    data = []
+    lengths = []
+    l = []
     # we pad or cut the sentences to be of length num_steps
-    raw_data = [sentence + [PAD_ID] * (num_steps + 1 - len(sentence))
-                if len(sentence) < num_steps + 1 else sentence[0:(num_steps + 1)]
-                for sentence in raw_data]
+    for sentence in raw_data:
+        lengths.append(min(len(sentence), num_steps))
+        if len(sentence) < num_steps + 1:
+            data.append(sentence + [PAD_ID] * (num_steps + 1 - len(sentence)))
+        else:
+            data.append(sentence[0:(num_steps + 1)])
 
-    data = np.array(raw_data, dtype=dtype)
+    data = np.array(data, dtype=dtype)
+    lengths = np.array(lengths, dtype=dtype)
 
-    xtrain = data[:, 0:num_steps].astype(dtype)
-    ytrain = data[:, 1:num_steps + 1].astype(dtype)
+    xtrain = data[:, 0: num_steps].astype(dtype)
+    ytrain = data[:, 1: num_steps + 1].astype(dtype)
 
-    return xtrain, ytrain
+    return xtrain, ytrain, lengths
