@@ -90,7 +90,7 @@ class PositionalAttention(nn.Module):
 
         # Need the lengths to normalize each sentence to respective length
         # for the building blocks - 1/N and j/N
-        lengths = pad_lengths.expand(35, 64).type(torch.float)
+        lengths = pad_lengths.expand(sequence_length, batch_size).type(torch.float)
 
         positioning_weights, _ = self.positioning_generator(x)
         mu_weights = F.relu(self.mu_generator(positioning_weights))

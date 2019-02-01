@@ -58,13 +58,14 @@ def convert_sentence_to_tensors(vocab, sentence):
 
     encoded = torch.tensor(encoded, dtype=torch.long, device=device)
 
+    length = torch.tensor(len(encoded), dtype=torch.float, device=device)
     model_input = encoded[:-1]
     target = encoded[1:]
 
     # convert_tensor_to_sentence(vocab, model_input)
     # convert_tensor_to_sentence(vocab, target)
 
-    return model_input.unsqueeze(0), target.unsqueeze(0)
+    return model_input.unsqueeze(0), target.unsqueeze(0), length
 
 
 def save_attention_visualization(args, model, vocabulary, epoch):
@@ -75,10 +76,10 @@ def save_attention_visualization(args, model, vocabulary, epoch):
     sentence3 = "the man bought the horse which i saw."
     sentences = [sentence1, sentence2, sentence3]
     for s in range(len(sentences)):
-        input_sentence, target_sentence = convert_sentence_to_tensors(vocabulary,
+        input_sentence, target_sentence, l = convert_sentence_to_tensors(vocabulary,
                                                                       sentences[s])
         _, attention_weights = model(
-            input_sentence, return_attention=True)
+            input_sentence, l, return_attention=True)
         plot_attention(args, vocabulary, input_sentence,
                        target_sentence, attention_weights, epoch, count=s)
 

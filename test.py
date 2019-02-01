@@ -30,10 +30,25 @@ from main import main
 #                  '--file-name', 'wiki_merity', '--no-positional-attention', '--dataset', 'wiki-02']
 # main(params_merity)
 
-params_attentive_lm = ["--embedding-size", '1000', '--hidden-size', '1000', '--n-layers', '2',
+# params_attentive_lm = ["--embedding-size", '1000', '--hidden-size', '1000', '--n-layers', '2',
+#                        '--batch-size', '32', '--epochs', '500', '--seed', '123',
+#                        '--log-interval', '200', '--patience', '6', '--lr', '30.0',
+#                        '--rnn-dropout', '0.2', '--tie-weights', '--file-name', 'wiki_salton',
+#                        '--attention', '--no-positional-attention', '--dataset', 'wiki-02']
+# main(params_attentive_lm)
+
+
+positional_lm = ["--embedding-size", '400', '--hidden-size', '400', '--n-layers', '2',
+                 '--batch-size', '32', '--epochs', '500', '--seed', '123', '--rnn-dropout', '0.2',
+                 '--log-interval', '200', '--lr', '30.0', '--tie-weights', '--file-name',
+                 'wiki_positional', '--patience', '5', '--dataset', 'wiki-02']
+main(positional_lm)
+
+
+params_attentive_lm = ["--embedding-size", '400', '--hidden-size', '400', '--n-layers', '2',
                        '--batch-size', '32', '--epochs', '500', '--seed', '123',
                        '--log-interval', '200', '--patience', '6', '--lr', '30.0',
-                       '--rnn-dropout', '0.2', '--tie-weights', '--file-name', 'wiki_salton',
+                       '--rnn-dropout', '0.2', '--tie-weights', '--file-name', 'wiki_salton_small',
                        '--attention', '--no-positional-attention', '--dataset', 'wiki-02']
 main(params_attentive_lm)
 
@@ -41,5 +56,5 @@ main(params_attentive_lm)
 positional_lm = ["--embedding-size", '400', '--hidden-size', '400', '--n-layers', '2',
                  '--batch-size', '32', '--epochs', '500', '--seed', '123', '--rnn-dropout', '0.2',
                  '--log-interval', '200', '--lr', '30.0', '--tie-weights', '--file-name',
-                 'positional_pos_gen_100', '--patience', '5', '--positioning-embedding', '100']
+                 'positional_asgd', '--patience', '5', '--optim', 'asgd']
 main(positional_lm)
