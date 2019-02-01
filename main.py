@@ -46,6 +46,8 @@ def main(args):
                         help='layer size for RNN encoder (default: 1)')
     parser.add_argument('--hidden-size', type=int, default=20, metavar='N',
                         help='hidden size for RNN encoder (default: 20)')
+    parser.add_argument('--positioning-embedding', type=int, default=20, metavar='N',
+                        help='hidden size for positioning generator (default: 20)')
     parser.add_argument('--input-dropout', type=float, default=0.5, metavar='D',
                         help='input dropout (default: 0.5)')
     parser.add_argument('--rnn-dropout', type=float, default=0.0, metavar='D',
@@ -103,6 +105,7 @@ def main(args):
                                       n_layers=args.n_layers,
                                       attention=args.attention,
                                       positional_attention=args.no_positional_attention,
+                                      positioning_embedding=args.positioning_embedding,
                                       hidden_size=args.hidden_size,
                                       dropout_p_decoder=args.decoder_dropout,
                                       dropout_p_encoder=args.rnn_dropout,

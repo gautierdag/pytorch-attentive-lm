@@ -13,9 +13,9 @@ def get_dataset(dataset, batch_size, device):
     """
     download_dataset(dataset)  # downloads and preprocess dataset if needed
     if dataset == "wiki-02":
-        data_files = [".data/wikitext-2/wikitext-2/wiki.train.tokens.sent",
-                      ".data/wikitext-2/wikitext-2/wiki.valid.tokens.sent",
-                      ".data/wikitext-2/wikitext-2/wiki.test.tokens.sent"]
+        data_files = [".data/wikitext-2/wikitext-2/wiki.train.tokens.sents",
+                      ".data/wikitext-2/wikitext-2/wiki.valid.tokens.sents",
+                      ".data/wikitext-2/wikitext-2/wiki.test.tokens.sents"]
         vocab_size = 33278 + 1  # add 1 to account for PAD
     if dataset == 'ptb':
         data_files = [".data/penn-treebank/ptb.train.txt",
@@ -59,7 +59,7 @@ def download_dataset(dataset):
         folder_name = 'penn-treebank'
         filename = 'ptb.test.txt'
     if dataset == 'wiki-02':
-        folder_name = 'wikitext-02'
+        folder_name = 'wikitext-2'
         filename = 'wiki.test.tokens'
     dataset_path = '.data/' + folder_name
     if not os.path.exists(dataset_path):

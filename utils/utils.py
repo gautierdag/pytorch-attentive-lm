@@ -50,7 +50,7 @@ def convert_tensor_to_sentence(vocab, tensor):
     for t in tensor:
         sentence += vocab.itos[t]
         sentence += ' '
-    # print(sentence)
+    print(sentence)
 
 
 def convert_sentence_to_tensors(vocab, sentence):
@@ -62,7 +62,10 @@ def convert_sentence_to_tensors(vocab, sentence):
     sentence = sentence.lower().replace('.', ' <eos>').split(' ')
     encoded = []
     for w in sentence:
-        encoded.append(vocab.stoi[w])
+        i  = vocab.stoi.get(w)
+        if i is None:
+            i = vocab.stoi.get('<unk>')
+        encoded.append(i)
 
     encoded = torch.tensor(encoded, dtype=torch.long, device=device)
 

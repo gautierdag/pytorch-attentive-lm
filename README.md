@@ -3,7 +3,7 @@
 
 This repo is an implementation of an Attentive RNN model for the task of language modelling. 
 
-Language modelling is done on both the PennTreeBank and Wikitext-02 dataset using the `torchtext` library.
+Language modelling is done on both the PennTreeBank and Wikitext-02 datasets. The files are parsed such that each training example consists of one sentence from the corpus, padded to a max batch length of 35. Longer sentences are clipped. This is done in order to manage the attention and attend to only words in the sentence (before timestep t if at timestep t). 
 
 The A-RNN-LM (Attention based Recurrent Neural Network for Language Modelling) was originally proposed in Coherent Dialogue with Attention-based Language Models (Hongyuan Mei et al. 2016, [link](https://arxiv.org/abs/1611.06997 "Coherent Dialogue with Attention-based Language Models")), and in Attentive Language Models (Salton et al. 2017, [link](https://www.semanticscholar.org/paper/Attentive-Language-Models-Salton-Ross/8a48edc093937a2f8ae665a4e1ecfa38972b234b "Attentive Language Models")). 
 
@@ -17,7 +17,6 @@ Dependencies:
 
   - `python=3.7`
   - `torch>=1.0.0`
-  - `torchtext=0.3.1`
   - `nltk`
 
 Install all depedencies and run `python main.py`.
