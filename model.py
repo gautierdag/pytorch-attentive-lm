@@ -76,6 +76,8 @@ class PositionalAttention(nn.Module):
     def normal_pdf(x, mu, sigma):
         """Return normalized Gaussian_pdf(x)."""
         x = torch.exp(-(x - mu)**2 / (2 * sigma**2 + 10e-4))
+        # Normalize the Gaussian PDF result
+        x = F.normalize(x, p=1)
         return x
 
     def forward(self, x, pad_lengths, return_attention=False):
@@ -137,10 +139,6 @@ class PositionalAttention(nn.Module):
 
             gaussian_weighted_attention = self.normal_pdf(
                 rel_counter, mu.unsqueeze(1), sigma).unsqueeze(2)
-
-            # Normalize the Gaussian PDF result
-            gaussian_weighted_attention = F.normalize(
-                gaussian_weighted_attention[:, :j+1, :].clone(), p=1)
 
             # multiply the weights with the hidden encoded states found till this point
             applied_positional_attention = x[:, :j+1,
