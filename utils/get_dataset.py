@@ -33,20 +33,20 @@ def get_dataset(dataset, batch_size, device):
     train_x = torch.tensor(train_data[0], dtype=torch.long, device=device)
     train_y = torch.tensor(train_data[1], dtype=torch.long, device=device)
     train_lengths = torch.tensor(
-        train_data[2], dtype=torch.long, device=device)
+        train_data[2], dtype=torch.float, device=device)
     train_dataset = TensorDataset(train_x, train_y, train_lengths)
 
     valid_data = lm_data_producer(valid_data)
     valid_x = torch.tensor(valid_data[0], dtype=torch.long, device=device)
     valid_y = torch.tensor(valid_data[1], dtype=torch.long, device=device)
     valid_lengths = torch.tensor(
-        valid_data[2], dtype=torch.long, device=device)
+        valid_data[2], dtype=torch.float, device=device)
     valid_dataset = TensorDataset(valid_x, valid_y, valid_lengths)
 
     test_data = lm_data_producer(test_data)
     test_x = torch.tensor(test_data[0], dtype=torch.long, device=device)
     test_y = torch.tensor(test_data[1], dtype=torch.long, device=device)
-    test_lengths = torch.tensor(test_data[2], dtype=torch.long, device=device)
+    test_lengths = torch.tensor(test_data[2], dtype=torch.float, device=device)
     test_dataset = TensorDataset(test_x, test_y, test_lengths)
 
     train_iter = DataLoader(train_dataset, batch_size=batch_size)

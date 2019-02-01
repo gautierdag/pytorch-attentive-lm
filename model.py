@@ -75,7 +75,7 @@ class PositionalAttention(nn.Module):
     @staticmethod
     def normal_pdf(x, mu, sigma):
         """Return normalized Gaussian_pdf(x)."""
-        x = torch.exp(-(x - mu)**2 / (2 * sigma**2 +10e-4))
+        x = torch.exp(-(x - mu)**2 / (2 * sigma**2 + 10e-4))
         return x
 
     def forward(self, x, pad_lengths, return_attention=False):
@@ -90,19 +90,22 @@ class PositionalAttention(nn.Module):
 
         # Need the lengths to normalize each sentence to respective length
         # for the building blocks - 1/N and j/N
-        lengths = pad_lengths.expand(sequence_length, batch_size).type(torch.float)
+        sentence_lengths = pad_lengths.expand(
+            sequence_length, batch_size)
 
+        # Running our linear layers (we run it all at once and parse through the sequence after)
         positioning_weights, _ = self.positioning_generator(x)
         mu_weights = F.relu(self.mu_generator(positioning_weights))
         sigma_weights = torch.sigmoid(
             self.sigma_generator(positioning_weights))
 
+        # Setting up Building Blocks
         prev_mu = torch.zeros(batch_size, device=device)
         building_blocks = torch.ones(
             (sequence_length, batch_size, self.num_building_blocks), device=device)
-        building_blocks[:, :, 1] = 1/lengths
+        building_blocks[:, :, 1] = 1/sentence_lengths
         building_blocks[:, :, 2] = (torch.arange(
-            sequence_length, dtype=torch.float, device=device)+1).unsqueeze(1).expand(-1, batch_size) / lengths
+            sequence_length, dtype=torch.float, device=device)+1).unsqueeze(1).expand(-1, batch_size) / sentence_lengths
 
         # Attend for each time step using the previous context
         position_vectors = []  # Which positions to attend to
@@ -116,21 +119,29 @@ class PositionalAttention(nn.Module):
             bb = building_blocks[j].clone()
             bb[:, 0] = prev_mu
 
-            mu = torch.bmm(mu_weights[:, j, :].clone().unsqueeze(
-                1), bb.unsqueeze(2)).squeeze(1)
-            prev_mu = mu.squeeze()
+            mu = torch.bmm(mu_weights[:, j, :].clone(
+            ).unsqueeze(1), bb.unsqueeze(2)).squeeze()
+
+            # need to clamp to direct attention to previous segment of sequence
+            # max dynamic and expands as we look further down sequence
+            mu = torch.max(mu, j/pad_lengths)
+            prev_mu = mu
 
             sigma = sigma_weights[:, j, :]
 
             # relative counter that represents 0-1 where to attend on sequence up till now
             rel_counter = torch.arange(
-                j+1, dtype=torch.float, device=device).unsqueeze(0) / (j+1)
+                j+1, dtype=torch.float, device=device)
+            rel_counter = rel_counter.expand(
+                batch_size, -1) / pad_lengths.view(batch_size, 1)
 
             gaussian_weighted_attention = self.normal_pdf(
-                rel_counter.expand(batch_size, -1), mu, sigma).unsqueeze(2)
+                rel_counter, mu.unsqueeze(1), sigma).unsqueeze(2)
 
+            # Normalize the Gaussian PDF result
             gaussian_weighted_attention = F.normalize(
                 gaussian_weighted_attention[:, :j+1, :].clone(), p=1)
+
             # multiply the weights with the hidden encoded states found till this point
             applied_positional_attention = x[:, :j+1,
                                              :].clone() * gaussian_weighted_attention
