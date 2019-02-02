@@ -6,3 +6,7 @@ dependencies:
   - python>=3.6
   - torch>=1.0.0
   - nltk
+  - tensorboardX
+  - matplotlib
+  - scipy
+  - numpy

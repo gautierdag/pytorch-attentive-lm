@@ -52,7 +52,6 @@ def _read_words(filename, ptb=True):
 
 
 def read_vocabulary(data_filenames, vocab_size):
-                    # normalize_digits=True):
     """ Helper to build the vocabulary from the given filename. It makes use
     of python collections.Counter to help counting the occurrences of each word.
     """
