@@ -1,7 +1,9 @@
 import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset
-import urllib.request
+import requests
+import io
+import zipfile
 
 from .data_reader import read_vocabulary, read_lm_data, lm_data_producer
 from .pre_process_wikitext import pre_process
@@ -67,13 +69,16 @@ def download_dataset(dataset):
         folder_name = 'wikitext-2'
         filename = 'wiki.test.tokens'
     dataset_path = '.data/' + folder_name
+
     if not os.path.exists(dataset_path):
         os.makedirs(dataset_path)
-    filepath = dataset_path + '/' + filename
-    if not os.path.exists(filepath):
-        if dataset == 'ptb':
+    if dataset == 'ptb':
+        filepath = dataset_path + '/' + filename
+        if not os.path.exists(filepath):
             download_ptb(dataset_path)
-        if dataset == 'wikitext-2':
+    if dataset == 'wiki-02':
+        filepath = dataset_path + '/'+folder_name + '/'+filename
+        if not os.path.exists(filepath):
             download_and_preproc_wiki(dataset_path)
     return
 
@@ -83,14 +88,27 @@ def download_ptb(dataset_path):
             'https://raw.githubusercontent.com/wojzaremba/lstm/master/data/ptb.valid.txt',
             'https://raw.githubusercontent.com/wojzaremba/lstm/master/data/ptb.test.txt']
 
-    urllib.request.retrieve(urls[0], dataset_path+"/ptb.train.txt")
-    urllib.request.retrieve(urls[1], dataset_path+"/ptb.valid.txt")
-    urllib.request.retrieve(urls[2], dataset_path+"/ptb.test.txt")
+    # To save to a relative path.
+    r = requests.get(urls[0])
+    with open(dataset_path+'/ptb.train.txt', 'wb') as f:
+        f.write(r.content)
+
+    r = requests.get(urls[1])
+    with open(dataset_path+'/ptb.valid.txt', 'wb') as f:
+        f.write(r.content)
+
+    r = requests.get(urls[2])
+    with open(dataset_path+'/ptb.test.txt', 'wb') as f:
+        f.write(r.content)
 
 
 def download_and_preproc_wiki(dataset_path):
+    print("Downloading wikitext")
     url = 'https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-2-v1.zip'
-    raise NotImplementedError
+
+    r = requests.get(url)
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    z.extractall(dataset_path)
 
     train = ".data/wikitext-2/wikitext-2/wiki.train.tokens"
     valid = ".data/wikitext-2/wikitext-2/wiki.valid.tokens"
