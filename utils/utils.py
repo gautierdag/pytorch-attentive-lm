@@ -58,7 +58,7 @@ def convert_sentence_to_tensors(vocab, sentence):
 
     encoded = torch.tensor(encoded, dtype=torch.long, device=device)
 
-    length = torch.tensor(len(encoded), dtype=torch.float, device=device)
+    length = torch.tensor([len(encoded)], dtype=torch.float, device=device)
     model_input = encoded[:-1]
     target = encoded[1:]
 
