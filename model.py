@@ -96,15 +96,20 @@ class PositionalAttention(nn.Module):
         sentence_lengths = pad_lengths.expand(
             sequence_length, batch_size)
 
-        # Running our linear layers (we run it all at once and parse through the sequence after)
+        # Running our linear and rnn layers (we run it all at once and parse through the sequence after)
         # positioning_weights, _ = self.positioning_generator(x)
-        packed_input = pack_padded_sequence(x, pad_lengths,
-                                            batch_first=True)
-        self.flatten_parameters()
-        packed_output, _ = self.positioning_generator(packed_input)
 
-        positioning_weights, _ = pad_packed_sequence(packed_output, batch_first=True,
-                                                     total_length=sequence_length)
+        self.flatten_parameters()
+
+        # pack for efficiency if more than one element (else unpadded)
+        if batch_size > 1:
+            packed_input = pack_padded_sequence(x, pad_lengths,
+                                                batch_first=True)
+            packed_output, _ = self.positioning_generator(packed_input)
+            positioning_weights, _ = pad_packed_sequence(packed_output, batch_first=True,
+                                                         total_length=sequence_length)
+        else:
+            positioning_weights, _ = self.positioning_generator(x)
 
         mu_weights = F.relu(self.mu_generator(positioning_weights))
         sigma_weights = torch.sigmoid(
@@ -227,19 +232,22 @@ class AttentiveRNNLanguageModel(nn.Module):
         self.init_weights()
 
     def forward(self, input, pad_lengths, return_attention=False):
-
+        batch_size = input.size(0)  # get the batch size
         total_length = input.size(1)  # get the max sequence length
 
         embedded = self.embedding(input)
         embedded = self.input_dropout(embedded)
 
-        # pack for efficiency
-        packed_input = pack_padded_sequence(embedded, pad_lengths,
-                                            batch_first=True)
         self.flatten_parameters()
-        packed_output, _ = self.encoder(packed_input)
-        encoder_output, _ = pad_packed_sequence(packed_output, batch_first=True,
-                                                total_length=total_length)
+        # pack for efficiency if more than one element (else unpadded)
+        if batch_size > 1:
+            packed_input = pack_padded_sequence(embedded, pad_lengths,
+                                                batch_first=True)
+            packed_output, _ = self.encoder(packed_input)
+            encoder_output, _ = pad_packed_sequence(packed_output, batch_first=True,
+                                                    total_length=total_length)
+        else:
+            encoder_output, _ = self.encoder(embedded)
 
         if self.attention:
             context_vectors, attention_score = self.attention_score_module(
