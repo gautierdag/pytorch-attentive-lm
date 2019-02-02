@@ -33,7 +33,7 @@ def evaluate(args, model, data_iterator, criterion,
             # - all but padding
             word_count += len(data.nonzero())
 
-    if save_attention and (args.attention or args.no_positional_attention):
+    if save_attention and (args.attention or args.no_positional_attention) and args.save_attention:
         save_attention_visualization(args, model, vocabulary, epoch)
     model.train()
     return total_loss / word_count
