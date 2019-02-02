@@ -110,6 +110,10 @@ def main(args):
                                       dropout_p_input=args.input_dropout,
                                       tie_weights=args.tie_weights)
 
+    if torch.cuda.device_count() > 1:
+        print("Using", torch.cuda.device_count(), "GPUs")
+        model = nn.DataParallel(model)
+
     model.to(device)
 
     # Training Set Up
