@@ -113,6 +113,10 @@ def main(args):
     if torch.cuda.device_count() > 1:
         print("Using", torch.cuda.device_count(), "GPUs")
         model = nn.DataParallel(model)
+        # cannot run examples since the batch size < num GPUS
+        args.save_attention = False
+    else:
+        args.save_attention = True
 
     model.to(device)
 
