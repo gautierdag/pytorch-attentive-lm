@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.nn.functional as F
 import math
 
@@ -96,7 +97,14 @@ class PositionalAttention(nn.Module):
             sequence_length, batch_size)
 
         # Running our linear layers (we run it all at once and parse through the sequence after)
-        positioning_weights, _ = self.positioning_generator(x)
+        # positioning_weights, _ = self.positioning_generator(x)
+        packed_input = pack_padded_sequence(x, pad_lengths,
+                                            batch_first=True)
+        packed_output, _ = self.positioning_generator(packed_input)
+
+        positioning_weights, _ = pad_packed_sequence(packed_output, batch_first=True,
+                                                     total_length=sequence_length)
+
         mu_weights = F.relu(self.mu_generator(positioning_weights))
         sigma_weights = torch.sigmoid(
             self.sigma_generator(positioning_weights))
@@ -219,10 +227,17 @@ class AttentiveRNNLanguageModel(nn.Module):
 
     def forward(self, input, pad_lengths, return_attention=False):
 
+        total_length = input.size(1)  # get the max sequence length
+
         embedded = self.embedding(input)
         embedded = self.input_dropout(embedded)
 
-        encoder_output, _ = self.encoder(embedded)
+        # pack for efficiency
+        packed_input = pack_padded_sequence(embedded, pad_lengths,
+                                            batch_first=True)
+        packed_output, _ = self.encoder(packed_input)
+        encoder_output, _ = pad_packed_sequence(packed_output, batch_first=True,
+                                                total_length=total_length)
 
         if self.attention:
             context_vectors, attention_score = self.attention_score_module(

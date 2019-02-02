@@ -5,6 +5,13 @@ import time
 from utils import save_attention_visualization
 
 
+def sort_by_lengths(data, targets, pad_lengths):
+    sorted_pad_lengths, sorted_index = pad_lengths.sort(descending=True)
+    data = data[sorted_index, :]
+    targets = targets[sorted_index, :]
+    return data, targets, sorted_pad_lengths
+
+
 def evaluate(args, model, data_iterator, criterion,
              save_attention=False, epoch=0, vocabulary=None):
     # Turn on evaluation mode which disables dropout.
@@ -15,6 +22,8 @@ def evaluate(args, model, data_iterator, criterion,
     with torch.no_grad():
         for _, batch in enumerate(data_iterator):
             data, targets, pad_lengths = batch[0], batch[1], batch[2]
+            data, targets, pad_lengths = sort_by_lengths(
+                data, targets, pad_lengths)
             output = model(data, pad_lengths)
             output_flat = output.view(-1, model.vocab_size)
             total_loss += criterion(output_flat,
@@ -44,7 +53,10 @@ def train(args, model, train_iter, valid_iter,
     for i, batch in enumerate(train_iter):
             # transpose text to make batch first
         iteration_step += 1
+
         data, targets, pad_lengths = batch[0], batch[1], batch[2]
+        data, targets, pad_lengths = sort_by_lengths(
+            data, targets, pad_lengths)
 
         model.zero_grad()
         output = model(data, pad_lengths)
