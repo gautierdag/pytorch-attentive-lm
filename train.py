@@ -25,7 +25,7 @@ def evaluate(args, model, data_iterator, criterion,
             data, targets, pad_lengths = sort_by_lengths(
                 data, targets, pad_lengths)
             output = model(data, pad_lengths)
-            output_flat = output.view(-1, model.vocab_size)
+            output_flat = output.view(-1, args.vocab_size)
             total_loss += criterion(output_flat,
                                     targets.view(-1)).item()
 
