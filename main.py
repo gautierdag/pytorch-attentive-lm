@@ -96,9 +96,9 @@ def main(args):
                                                            batch_size=args.batch_size,
                                                            device=device)
 
-    vocab_size = len(vocab)
+    args.vocab_size = len(vocab)
 
-    model = AttentiveRNNLanguageModel(vocab_size,
+    model = AttentiveRNNLanguageModel(args.vocab_size,
                                       embedding_size=args.embedding_size,
                                       n_layers=args.n_layers,
                                       attention=args.attention,

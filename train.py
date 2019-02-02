@@ -60,7 +60,7 @@ def train(args, model, train_iter, valid_iter,
 
         model.zero_grad()
         output = model(data, pad_lengths)
-        loss = criterion(output.view(-1, model.vocab_size), targets.view(-1))
+        loss = criterion(output.view(-1, args.vocab_size), targets.view(-1))
         loss.backward()
 
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
