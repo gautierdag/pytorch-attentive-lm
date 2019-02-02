@@ -100,6 +100,7 @@ class PositionalAttention(nn.Module):
         # positioning_weights, _ = self.positioning_generator(x)
         packed_input = pack_padded_sequence(x, pad_lengths,
                                             batch_first=True)
+        self.flatten_parameters()
         packed_output, _ = self.positioning_generator(packed_input)
 
         positioning_weights, _ = pad_packed_sequence(packed_output, batch_first=True,
@@ -235,6 +236,7 @@ class AttentiveRNNLanguageModel(nn.Module):
         # pack for efficiency
         packed_input = pack_padded_sequence(embedded, pad_lengths,
                                             batch_first=True)
+        self.flatten_parameters()
         packed_output, _ = self.encoder(packed_input)
         encoder_output, _ = pad_packed_sequence(packed_output, batch_first=True,
                                                 total_length=total_length)
@@ -267,8 +269,6 @@ class AttentiveRNNLanguageModel(nn.Module):
         Flatten parameters of all reccurrent components in the model.
         """
         self.encoder.flatten_parameters()
-        if self.positional_attention:
-            self.position_score_module.flatten_parameters()
 
     def init_weights(self, init_range=0.1):
         """
