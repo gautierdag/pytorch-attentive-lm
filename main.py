@@ -212,10 +212,10 @@ def main(args):
                     if args.parallel:
                         torch.save(model.module.to(torch.device('cpu')), f)
                     else:
-                        torch.save(mode.to(torch.device('cpu'), f)
+                        torch.save(mode.to(torch.device('cpu'), f))
 
-                best_val_loss=val_loss
-                early_stopping_counter=0
+                best_val_loss = val_loss
+                early_stopping_counter = 0
             else:
                 early_stopping_counter += 1
 
@@ -234,15 +234,14 @@ def main(args):
     if os.path.exists('models/{}.pt'.format(args.file_name)):
         # Load the best saved model.
         with open('models/{}.pt'.format(args.file_name), 'rb') as f:
-            model=torch.load(f)
+            model = torch.load(f)
             model.to(device)
             # after load the rnn params are not a continuous chunk of memory
             # this makes them a continuous chunk, and will speed up forward pass
             model.flatten_parameters()
 
-
         # Run on test data.
-        test_loss=evaluate(args, model, test_iter, criterion)
+        test_loss = evaluate(args, model, test_iter, criterion)
         print('=' * 89)
         print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
             test_loss, math.exp(test_loss)))
