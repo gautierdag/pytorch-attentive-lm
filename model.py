@@ -102,7 +102,7 @@ class PositionalAttention(nn.Module):
         self.flatten_parameters()
 
         # pack for efficiency if more than one element (else unpadded)
-        if batch_size > 1:
+        if not return_attention:
             packed_input = pack_padded_sequence(x, pad_lengths,
                                                 batch_first=True)
             packed_output, _ = self.positioning_generator(packed_input)
@@ -240,7 +240,7 @@ class AttentiveRNNLanguageModel(nn.Module):
 
         self.flatten_parameters()
         # pack for efficiency if more than one element (else unpadded)
-        if batch_size > 1:
+        if not return_attention:
             packed_input = pack_padded_sequence(embedded, pad_lengths,
                                                 batch_first=True)
             packed_output, _ = self.encoder(packed_input)
@@ -286,3 +286,17 @@ class AttentiveRNNLanguageModel(nn.Module):
             -init_range, init_range)
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-init_range, init_range)
+
+
+def get_model(args):
+    return AttentiveRNNLanguageModel(args.vocab_size,
+                                     embedding_size=args.embedding_size,
+                                     n_layers=args.n_layers,
+                                     attention=args.attention,
+                                     positional_attention=args.no_positional_attention,
+                                     positioning_embedding=args.positioning_embedding,
+                                     hidden_size=args.hidden_size,
+                                     dropout_p_decoder=args.decoder_dropout,
+                                     dropout_p_encoder=args.rnn_dropout,
+                                     dropout_p_input=args.input_dropout,
+                                     tie_weights=args.tie_weights)

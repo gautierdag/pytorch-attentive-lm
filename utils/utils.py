@@ -77,16 +77,22 @@ def save_attention_visualization(args, model, vocabulary, epoch):
     sentences = [sentence1, sentence2, sentence3]
     for s in range(len(sentences)):
         input_sentence, target_sentence, l = convert_sentence_to_tensors(vocabulary,
-                                                                      sentences[s])
+                                                                         sentences[s])
+        if args.parallel:
+            count = torch.cuda.device_count()
+            input_sentence = input_sentence.expand(count, -1)
+            target_sentence = target_sentence.expand(count, -1)
+            l = l.expand(count)
+
         _, attention_weights = model(
             input_sentence, l, return_attention=True)
+
         plot_attention(args, vocabulary, input_sentence,
                        target_sentence, attention_weights, epoch, count=s)
 
 
 def plot_attention(args, vocab, data, targets,
                    attention_weights, epoch, count=0):
-    batch_size = data.shape[0]
     seq_length = data.shape[1]
 
     clean_attention_weights = np.zeros((seq_length, seq_length))

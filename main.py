@@ -10,7 +10,7 @@ import torch.optim as optim
 
 from tensorboardX import SummaryWriter
 
-from model import AttentiveRNNLanguageModel
+from model import AttentiveRNNLanguageModel, get_model
 from train import evaluate, train
 from utils import generate_filename, save_attention_visualization, get_dataset
 
@@ -98,17 +98,7 @@ def main(args):
 
     args.vocab_size = len(vocab)
 
-    model = AttentiveRNNLanguageModel(args.vocab_size,
-                                      embedding_size=args.embedding_size,
-                                      n_layers=args.n_layers,
-                                      attention=args.attention,
-                                      positional_attention=args.no_positional_attention,
-                                      positioning_embedding=args.positioning_embedding,
-                                      hidden_size=args.hidden_size,
-                                      dropout_p_decoder=args.decoder_dropout,
-                                      dropout_p_encoder=args.rnn_dropout,
-                                      dropout_p_input=args.input_dropout,
-                                      tie_weights=args.tie_weights)
+    model = get_model(args)
 
     if torch.cuda.device_count() > 1:
         print("Using", torch.cuda.device_count(), "GPUs")
@@ -151,43 +141,16 @@ def main(args):
                 optimizer.param_groups[0]['lr'] = current_learning_rate
 
             epoch_start_time = time.time()
+
             train(args, model,
                   train_iter, valid_iter,
                   criterion, optimizer,
                   epoch, writer)
 
-            # if parallel then evaluate on single gpu
-            # this is a bit complex but needed to save atttention diagrams
-            # since when we use the save_attention we run examples where
-            # batch size < num_of_GPUS
-            if args.parallel:
-                with open('models/temp.pt', 'wb') as fw2:
-                    # save temporary copy
-                    torch.save(model.module, fw2)
-
-                with open('models/temp.pt', 'rb') as fr:
-                    # create an instance of your network
-                    single_gpu_model = torch.load(fr)
-                    # send to single gpu
-                    single_gpu_model.to(device)
-
-                # infer on single gpu
-                val_loss = evaluate(args, single_gpu_model, valid_iter,
-                                    criterion, save_attention=True, epoch=epoch,
-                                    vocabulary=vocab)
-                test_loss = evaluate(
-                    args, single_gpu_model, test_iter, criterion)
-
-                # use multiple GPUs again
-                with open('models/temp.pt', 'rb') as fr:
-                    model = torch.load(fr)
-                    model = nn.DataParallel(model)
-                    model.to(device)
-            else:
-                val_loss = evaluate(args, model, valid_iter,
-                                    criterion, save_attention=True, epoch=epoch,
-                                    vocabulary=vocab)
-                test_loss = evaluate(args, model, test_iter, criterion)
+            val_loss = evaluate(args, model, valid_iter,
+                                criterion, save_attention=True, epoch=epoch,
+                                vocabulary=vocab)
+            test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
             scheduler.step(val_loss)
@@ -217,9 +180,11 @@ def main(args):
 
                 with open('models/{}.pt'.format(args.file_name), 'wb') as f:
                     if args.parallel:
-                        torch.save(model.module.to(torch.device('cpu')), f)
+                        torch.save(model.module.state_dict().to(
+                            torch.device('cpu')), f)
                     else:
-                        torch.save(model.to(torch.device('cpu'), f))
+                        torch.save(model.state_dict().to(
+                            torch.device('cpu')), f)
 
                 best_val_loss = val_loss
                 early_stopping_counter = 0
@@ -241,9 +206,11 @@ def main(args):
     if os.path.exists('models/{}.pt'.format(args.file_name)):
         # Load the best saved model.
         with open('models/{}.pt'.format(args.file_name), 'rb') as f:
-            model = torch.load(f)
+            # instantiate model
+            model = get_model(args)
             # load on either single gpu or on the cpu (if gpu not avail)
-            model.to(device)
+            model.load_state_dict(torch.load(f, map_location=device))
+
             # after load the rnn params are not a continuous chunk of memory
             # this makes them a continuous chunk, and will speed up forward pass
             model.flatten_parameters()
