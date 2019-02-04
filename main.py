@@ -147,9 +147,27 @@ def main(args):
                   criterion, optimizer,
                   epoch, writer)
 
-            val_loss = evaluate(args, model, valid_iter,
-                                criterion, save_attention=True, epoch=epoch,
-                                vocabulary=vocab)
+            if args.parallel:
+                with open('models/temp.pt'.format(args.file_name), 'wb') as fw:
+                    torch.save(model.module.state_dict(), fw)
+
+                with open('models/temp.pt'.format(args.file_name), 'rb') as fr:
+                    single_gpu_model = get_model(args)
+                    # load on either single gpu or on the cpu (if gpu not avail)
+                    single_gpu_model.load_state_dict(
+                        torch.load(f, map_location=device))
+                    single_gpu_model.to(device)
+
+                val_loss = evaluate(args, single_gpu_model, valid_iter,
+                                    criterion, save_attention=True, epoch=epoch,
+                                    vocabulary=vocab)
+                del single_gpu_model
+
+            else:
+                val_loss = evaluate(args, model, valid_iter,
+                                    criterion, save_attention=True, epoch=epoch,
+                                    vocabulary=vocab)
+
             test_loss = evaluate(args, model, test_iter, criterion)
 
             # possibly update learning rate
@@ -210,7 +228,7 @@ def main(args):
             model = get_model(args)
             # load on either single gpu or on the cpu (if gpu not avail)
             model.load_state_dict(torch.load(f, map_location=device))
-
+            model.to(device)
             # after load the rnn params are not a continuous chunk of memory
             # this makes them a continuous chunk, and will speed up forward pass
             model.flatten_parameters()

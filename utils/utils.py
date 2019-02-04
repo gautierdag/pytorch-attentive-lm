@@ -78,12 +78,6 @@ def save_attention_visualization(args, model, vocabulary, epoch):
     for s in range(len(sentences)):
         input_sentence, target_sentence, l = convert_sentence_to_tensors(vocabulary,
                                                                          sentences[s])
-        if args.parallel:
-            count = torch.cuda.device_count()
-            input_sentence = input_sentence.expand(count, -1)
-            target_sentence = target_sentence.expand(count, -1)
-            l = l.expand(count)
-
         _, attention_weights = model(
             input_sentence, l, return_attention=True)
 
