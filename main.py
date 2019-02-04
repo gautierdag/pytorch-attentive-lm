@@ -151,22 +151,24 @@ def main(args):
                 optimizer.param_groups[0]['lr'] = current_learning_rate
 
             epoch_start_time = time.time()
-            train(args, model,
-                  train_iter, valid_iter,
-                  criterion, optimizer,
-                  epoch, writer)
+            # train(args, model,
+            #       train_iter, valid_iter,
+            #       criterion, optimizer,
+            #       epoch, writer)
 
             # if parallel then evaluate on single gpu
             if args.parallel:
-                with open('models/temp.pt', 'wb') as f:
+                with open('models/temp.pt', 'wb') as fw:
                     # save temporary copy
-                    torch.save(model.module.to(torch.device('cpu')), f)
+                    torch.save(model.module.to(torch.device('cpu')), fw)
 
-                with open('models/temp.pt', 'rb') as f:
+                with open('models/temp.pt', 'rb') as fr:
                     # create an instance of your network
-                    single_gpu_model = torch.load(f)
+                    single_gpu_model = torch.load(fr)
                     # send to single gpu
                     single_gpu_model.to(device)
+                print(fr.closed)
+                print(fw.closed)
 
                 # infer on single gpu
                 val_loss = evaluate(args, single_gpu_model, valid_iter,
@@ -176,9 +178,10 @@ def main(args):
                     args, single_gpu_model, test_iter, criterion)
 
                 # use multiple GPUs again
-                model = torch.load(f)
-                model = nn.DataParallel(model)
-                model.to(device)
+                with open('models/temp.pt', 'rb') as fr:
+                    model = torch.load(fr)
+                    model = nn.DataParallel(model)
+                    model.to(device)
             else:
                 val_loss = evaluate(args, model, valid_iter,
                                     criterion, save_attention=True, epoch=epoch,
