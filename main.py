@@ -161,10 +161,13 @@ def main(args):
                 with open('models/temp.pt', 'wb') as f:
                     # save temporary copy
                     torch.save(model.module.to(torch.device('cpu')), f)
+
+                with open('models/temp.pt', 'rb') as f:
                     # create an instance of your network
                     single_gpu_model = torch.load(f)
                     # send to single gpu
                     single_gpu_model.to(device)
+
                 # infer on single gpu
                 val_loss = evaluate(args, single_gpu_model, valid_iter,
                                     criterion, save_attention=True, epoch=epoch,
@@ -212,7 +215,7 @@ def main(args):
                     if args.parallel:
                         torch.save(model.module.to(torch.device('cpu')), f)
                     else:
-                        torch.save(mode.to(torch.device('cpu'), f))
+                        torch.save(model.to(torch.device('cpu'), f))
 
                 best_val_loss = val_loss
                 early_stopping_counter = 0
