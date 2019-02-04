@@ -161,15 +161,11 @@ def main(args):
             # since when we use the save_attention we run examples where
             # batch size < num_of_GPUS
             if args.parallel:
-                with open('models/temp_multi_gpu.pt', 'wb') as fw1:
+                with open('models/temp.pt', 'wb') as fw2:
                     # save temporary copy
-                    torch.save(model, fw1)
+                    torch.save(model.module, fw2)
 
-                with open('models/temp_cpu.pt', 'wb') as fw2:
-                    # save temporary copy
-                    torch.save(model.module.to(torch.device('cpu')), fw2)
-
-                with open('models/temp_cpu.pt', 'rb') as fr:
+                with open('models/temp.pt', 'rb') as fr:
                     # create an instance of your network
                     single_gpu_model = torch.load(fr)
                     # send to single gpu
@@ -183,10 +179,10 @@ def main(args):
                     args, single_gpu_model, test_iter, criterion)
 
                 # use multiple GPUs again
-                with open('models/temp_multi_gpu.pt', 'rb') as fr:
+                with open('models/temp.pt', 'rb') as fr:
                     model = torch.load(fr)
-                    # model = nn.DataParallel(model)
-                    # model.to(device)
+                    model = nn.DataParallel(model)
+                    model.to(device)
             else:
                 val_loss = evaluate(args, model, valid_iter,
                                     criterion, save_attention=True, epoch=epoch,
