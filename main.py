@@ -151,12 +151,15 @@ def main(args):
                 optimizer.param_groups[0]['lr'] = current_learning_rate
 
             epoch_start_time = time.time()
-            # train(args, model,
-            #       train_iter, valid_iter,
-            #       criterion, optimizer,
-            #       epoch, writer)
+            train(args, model,
+                  train_iter, valid_iter,
+                  criterion, optimizer,
+                  epoch, writer)
 
             # if parallel then evaluate on single gpu
+            # this is a bit complex but needed to save atttention diagrams
+            # since when we use the save_attention we run examples where
+            # batch size < num_of_GPUS
             if args.parallel:
                 with open('models/temp.pt', 'wb') as fw:
                     # save temporary copy
@@ -167,8 +170,6 @@ def main(args):
                     single_gpu_model = torch.load(fr)
                     # send to single gpu
                     single_gpu_model.to(device)
-                print(fr.closed)
-                print(fw.closed)
 
                 # infer on single gpu
                 val_loss = evaluate(args, single_gpu_model, valid_iter,
@@ -241,6 +242,7 @@ def main(args):
         # Load the best saved model.
         with open('models/{}.pt'.format(args.file_name), 'rb') as f:
             model = torch.load(f)
+            # load on either single gpu or on the cpu (if gpu not avail)
             model.to(device)
             # after load the rnn params are not a continuous chunk of memory
             # this makes them a continuous chunk, and will speed up forward pass
