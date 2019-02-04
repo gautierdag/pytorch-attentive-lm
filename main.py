@@ -155,7 +155,7 @@ def main(args):
                     single_gpu_model = get_model(args)
                     # load on either single gpu or on the cpu (if gpu not avail)
                     single_gpu_model.load_state_dict(
-                        torch.load(f, map_location=device))
+                        torch.load(fr, map_location=device))
                     single_gpu_model.to(device)
 
                 val_loss = evaluate(args, single_gpu_model, valid_iter,
@@ -198,11 +198,9 @@ def main(args):
 
                 with open('models/{}.pt'.format(args.file_name), 'wb') as f:
                     if args.parallel:
-                        torch.save(model.module.state_dict().to(
-                            torch.device('cpu')), f)
+                        torch.save(model.module.state_dict(), f)
                     else:
-                        torch.save(model.state_dict().to(
-                            torch.device('cpu')), f)
+                        torch.save(model.state_dict(), f)
 
                 best_val_loss = val_loss
                 early_stopping_counter = 0
