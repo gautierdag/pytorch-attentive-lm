@@ -3,6 +3,7 @@ import argparse
 import time
 import math
 import sys
+import warnings
 
 import torch
 import torch.nn as nn
@@ -83,6 +84,9 @@ def main(args):
     parser.add_argument('--file-name', action="store",
                         help='Specific filename to save under (default: uses params to generate', default=False)
 
+    parser.add_argument(
+        '--parallel', help='Enable using GPUs in parallel (default: False', action='store_true')
+
     args = parser.parse_args(args)
 
     if not args.file_name:
@@ -100,12 +104,13 @@ def main(args):
 
     model = get_model(args)
 
-    if torch.cuda.device_count() > 1:
+    if torch.cuda.device_count() > 1 and args.parallel:
         print("Using", torch.cuda.device_count(), "GPUs")
         model = nn.DataParallel(model)
-        # cannot run examples since the batch size < num GPUS
-        args.parallel = True
     else:
+        if args.parallel:
+            warnings.warn(
+                "Passed in parallel flag but torch unable to detect multiple GPUs")
         args.parallel = False
 
     model.to(device)
