@@ -7,6 +7,8 @@ Language modelling is done on both the PennTreeBank and Wikitext-02 datasets. Th
 
 The A-RNN-LM (Attention based Recurrent Neural Network for Language Modelling) was originally proposed in Coherent Dialogue with Attention-based Language Models (Hongyuan Mei et al. 2016, [link](https://arxiv.org/abs/1611.06997 "Coherent Dialogue with Attention-based Language Models")), and in Attentive Language Models (Salton et al. 2017, [link](https://www.semanticscholar.org/paper/Attentive-Language-Models-Salton-Ross/8a48edc093937a2f8ae665a4e1ecfa38972b234b "Attentive Language Models")). 
 
+![Architecture](https://i.imgur.com/Y0rlTCg.png)
+
 The model consists of running a traditional attention mechanism on the previous hidden states of the encoder RNN layer(s) to encode a context vector which is then combined with the last encoded hidden state in order to predict the next word in the sequence. 
 
 
@@ -81,14 +83,32 @@ optional arguments:
 ### Results on PTB:
 | Model| Number of parameters | Validation Perplexity | Test Perplexity  |
 | ------------- | :-------------: | :-------------:| :---------:|
-| LSTM Baseline (Merity et al., 2017)| 7.86M | 66.77 | 65.96
-| Attentive LM (Salton et al. 2017)| 14.5M  |  81.72 | 79.86
-| Positional Attentive LM | 6.9M |  72.69 | 70.92
+| LSTM Baseline (Merity et al., 2017)| 7.86M | **66.77** | **64.96**
+| Attentive LM (Salton et al. 2017)| 7.06M  |  79.09 | 76.56
+| Positional Attentive LM | **6.9M** |  72.69 | 70.92
+
+
+### Results on Wikitext-02:
+| Model| Number of parameters | Validation Perplexity | Test Perplexity  |
+| ------------- | :-------------: | :-------------:| :---------:|
+| LSTM Baseline (Merity et al., 2017)| 7.86M | **72.43** | **68.50**
+| Attentive LM (Salton et al. 2017)|  7.06M  |  78.43 | 74.37
+| Positional Attentive LM | **6.9M** |  74.39| 70.73
+
+
+### Reproducing results: 
+You can rerun all the models which generated the tables above by simply running:
+
+`python test.py`
+
+However please note that some of these models take upwards of 8hours to converge on a single 1080 GPU, so the total run-time of the experiment could be approximately 2 days. 
+
+Multi-GPU support is disabled by default as it was shown to have a negative impact on results. On top of that since batches are small in practice it is not actually much faster since a lot of time is spent sending the tensors to the respective GPUs.
 
 ### Comparing attentions 
 
 Here are shown side by side comparaisons of the two attention distributions on an example: 
 
-![alt-text-1](https://imgur.com/15rcNWc.png "Standard Attention") ![alt-text-2](https://imgur.com/q5CiIjV.png "Positional Attention")
+![Standard Attention](https://i.imgur.com/15rcNWc.png "Standard Attention") ![Positional Attention](https://i.imgur.com/q5CiIjV.png "Positional Attention")
 
 The words in the X-axis are the inputs at each time step and the words in the Y-axis are the targets. Both models were trained on the Wikitext-02 dataset until convergence. 

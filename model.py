@@ -98,7 +98,6 @@ class PositionalAttention(nn.Module):
 
         # Running our linear and rnn layers (we run it all at once and parse through the sequence after)
         # positioning_weights, _ = self.positioning_generator(x)
-
         self.flatten_parameters()
 
         # pack for efficiency if more than one element (else unpadded)
